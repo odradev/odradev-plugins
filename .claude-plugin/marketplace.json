@@ -1,0 +1,13 @@
+{
+  "name": "odradev-plugins",
+  "owner": {
+    "name": "Odradev"
+  },
+  "plugins": [
+    {
+      "name": "odra-plugin",
+      "source": "./plugins/odra-plugin",
+      "description": "Adds set of skills for agentic smart contracts development"
+    }
+  ]
+}
