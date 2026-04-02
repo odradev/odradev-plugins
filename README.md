@@ -1,6 +1,6 @@
 # Odra Plugin Marketplace
 
-A [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces) for distributing plugins related to [Odra](https://odra.dev) — a Rust-based smart contract framework for Casper Network.
+A [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces) for distributing plugins related to [Odra](https://github.com/odradev/odra) — a Rust-based smart contract framework for Casper Network.
 
 ## Available Plugins
 
@@ -13,7 +13,7 @@ Streamlines smart contract development with the Odra framework. Gives Claude Cod
 Add the marketplace and install the plugin:
 
 ```
-/plugin marketplace add odradev/plugin-marketplace
+/plugin marketplace add odradev/odradev-plugins
 /plugin install odra-plugin@odradev-plugins
 ```
 
@@ -41,12 +41,12 @@ To make the plugin available automatically for everyone working on your Odra pro
     "odradev-plugins": {
       "source": {
         "source": "github",
-        "repo": "odradev/plugin-marketplace"
+        "repo": "odradev/odradev-plugins"
       }
     }
   }
   "enabledPlugins": {
-    "odra-plugin@plugin-marketplace": true
+    "odra-plugin@odradev-plugins": true
   }
 }
 ```
