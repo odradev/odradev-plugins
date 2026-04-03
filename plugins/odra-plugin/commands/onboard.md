@@ -5,12 +5,20 @@ description: >
   testing, and deploying your first contract step by step with explanations.
   Use when the user says "onboard", "get started", "tutorial", "learn odra",
   "teach me", or "onboard me".
-allowed-tools: Skill
+allowed-tools: Skill, Read
 ---
 
 # Odra Onboarding
 
 A guided walkthrough for writing, testing, and deploying your first Odra smart contract. Each step verbosely explains the concepts and actions taken, ensuring you understand not just the "how" but also the "why" behind each part of the process.
+
+## Context
+
+Read these before proceeding:
+
+- `${CLAUDE_PLUGIN_ROOT}/context/overview/architecture.md`
+- `${CLAUDE_PLUGIN_ROOT}/context/overview/contract-model.md`
+- `${CLAUDE_PLUGIN_ROOT}/context/overview/testing-model.md`
 
 ---
 
@@ -28,17 +36,7 @@ Invoke `/check-env`. If any required tools are missing, help the user install th
 
 ### 2a — Explain the Odra model
 
-Before generating code, explain to the user:
-
-> **How Odra contracts work:**
->
-> An Odra contract is a Rust struct marked with `#[odra::module]`. The struct's fields are your on-chain storage — they persist between calls. Each `pub fn` in the impl block becomes an **entry point** — a function that can be called on-chain.
->
-> Odra uses two special storage types:
-> - `Var<T>` — stores a single value (like a variable)
-> - `Mapping<K, V>` — stores key-value pairs (like a hash map)
->
-> The `init` method is the constructor — it runs once when the contract is deployed.
+Before generating code, explain to the user a high-level overview of how Odra contracts are structured and how they work.
 
 ### 2b — Gather requirements
 
@@ -50,7 +48,7 @@ Always use the `AskUserQuestion` tool to suggest simple examples if they're unsu
 
 ### 2c — Generate the contract
 
-`odra-contract-writer` agent invokes `/new-contract` with the user's requirements.
+`odra-contract-writer` agent writes code with the user's requirements.
 
 ### 2d — Explain what was generated
 
@@ -107,7 +105,7 @@ If they want to continue:
 If didn't trigger tests on `CasperVM` build contracts:
 
 ```bash
-cargo odra build -b casper
+cargo odra build
 ```
 
 Explain: this compiles contracts to `.wasm` files in the `wasm/` directory.
@@ -130,12 +128,7 @@ Invoke `/deploy-to-livenet` targeting nctl.
 
 > **You've completed the Odra onboarding.** Here's what you can do next:
 >
-> - `/new-contract` — add more contracts to your project
-> - `/new-entrypoint` — add methods to existing contracts
-> - `/new-version` — create an upgraded version of a contract
-> - `/new-factory-contract` — create a factory that deploys child contracts
-> - `/new-scenario` — add CLI scenarios for interacting with deployed contracts'
-> - `/run-tests` - run unit and integration test on your local machine.
-> - `/deploy-to-livenet` — deploy to testnet or mainnet
+> - `/odra:deploy-to-livenet` — deploy to testnet or mainnet
+> - Instruct me to write code, fix bugs, or add features to your contracts - a specialized agent will handle it.
 >
 > Run any skill directly — no guided mode needed. You're ready.

@@ -28,14 +28,7 @@ User AskUserQuestion tool.
 
 ### For nctl
 
-Check if NCTL is running the bundled script under `scripts/check-nctl.sh`.
-
-```bash
-./${CLAUDE_SKILL_DIR}/scripts/check-nctl.sh
-```
-
-If not running, run `/start-nctl` and then `/setup-nctl` to extract keys and create the `.env.nctl` file.
-If already running, ensure `.env.nctl` exists. If not, run `/setup-nctl`.
+Run `/odra:setup-nctl`.
 
 ### For testnet
 
