@@ -12,14 +12,6 @@ allowed-tools: Skill, Read
 
 A guided walkthrough for writing, testing, and deploying your first Odra smart contract. Each step verbosely explains the concepts and actions taken, ensuring you understand not just the "how" but also the "why" behind each part of the process.
 
-## Context
-
-Read these before proceeding:
-
-- `${CLAUDE_PLUGIN_ROOT}/context/overview/architecture.md`
-- `${CLAUDE_PLUGIN_ROOT}/context/overview/contract-model.md`
-- `${CLAUDE_PLUGIN_ROOT}/context/overview/testing-model.md`
-
 ---
 
 ## Step 1 — Environment Check
@@ -129,6 +121,8 @@ Invoke `/deploy-to-livenet` targeting nctl.
 > **You've completed the Odra onboarding.** Here's what you can do next:
 >
 > - `/odra:deploy-to-livenet` — deploy to testnet or mainnet
+> - `/odra:setup-nctl` — set up a local node for testing and development
+> - `/odra:test-contracts` — run tests on OdraVM or/and CasperVM
 > - Instruct me to write code, fix bugs, or add features to your contracts - a specialized agent will handle it.
 >
 > Run any skill directly — no guided mode needed. You're ready.

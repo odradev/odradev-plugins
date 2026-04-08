@@ -1,7 +1,52 @@
-# Testing Reference
+# Odra Testing Guide
 
-See `overview/testing-model.md` for the big picture on backends (OdraVM, CasperVM, livenet).
-This file covers the test API.
+## Three Backends
+
+### OdraVM (default — use for unit tests)
+
+Fast in-memory VM. No blockchain, no WASM. Runs in milliseconds.
+
+```bash
+cargo odra test           # from the contracts/ or project root
+```
+
+Use OdraVM for: all contract logic tests, event assertions, error assertions,
+caller-switching tests, balance tests.
+
+### CasperVM (use for integration tests)
+
+Full Casper execution engine. Compiles contracts to WASM and runs them through
+the real Casper runtime. Much slower than OdraVM but catches WASM-specific issues.
+
+```bash
+cargo odra test -b casper
+```
+
+Use CasperVM for: pre-deployment validation, testing contracts that interact
+with Casper-specific types, verifying WASM compilation succeeds.
+
+### Livenet (use for deployment)
+
+Real Casper blockchain node. Requires a running node (NCTL locally or testnet/mainnet).
+Not used for automated tests — used via the CLI binary in `cli/`.
+
+```bash
+# from cli/ directory
+cargo run --bin cli --features=livenet -- deploy
+```
+
+Use livenet for: deploying to nctl/testnet/mainnet, running scenarios against a live node.
+
+## Switching Backends
+
+The backend is selected via the `ODRA_BACKEND` environment variable:
+
+```bash
+cargo odra test -b casper               # force CasperVM
+cargo odra test                         # OdraVM (default)
+```
+
+In test code, `odra_test::env()` returns the correct backend automatically.
 
 ## Setting Up a Test
 
@@ -92,7 +137,7 @@ let time = contract.get_timestamp(); // should reflect new block time
 
 ## Asserting Events
 
-See `reference/events.md` for the full events API.
+See `events.md` for the full events API.
 
 ```rust
 assert!(env.emitted_event(&contract, MyEvent {
@@ -102,7 +147,7 @@ assert!(env.emitted_event(&contract, MyEvent {
 
 ## Asserting Errors
 
-See `reference/errors.md` for error definition. Use `.try_method()`:
+See `errors.md` for error definition. Use `.try_method()`:
 
 ```rust
 let err = contract.try_restricted_action().unwrap_err();

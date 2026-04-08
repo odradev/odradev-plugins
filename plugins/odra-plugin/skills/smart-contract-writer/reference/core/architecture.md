@@ -9,20 +9,6 @@ integration tests, and a livenet client for production deployments.
 
 ## Crate Map
 
-```
-odra/                   User-facing facade — re-exports core + macros. Import this.
-odra-macros/            Proc macros: #[odra::module], #[odra::event], etc.
-core/                   HostEnv, HostContext, ContractContext, storage traits
-odra-vm/                In-memory VM backend for unit tests (OdraVmHost)
-odra-casper/
-  test-vm/              Full Casper execution engine backend (CasperHost)
-  livenet-env/          Real Casper blockchain backend (LivenetHost)
-  wasm-env/             On-chain WASM execution environment
-odra-cli/               CLI tool for livenet contract management
-odra-schema/            JSON schema generation from contract definitions
-odra-test/              Test environment selector (env() + ODRA_BACKEND switching)
-```
-
 In a project scaffolded from the starter template, you work in:
 - `contracts/` — contract crate, depends on `odra`
 - `cli/` — CLI binary, depends on `odra-cli`
@@ -48,7 +34,6 @@ Test/CLI call
 **`ContractContext`** (on-chain execution interface):
 - Used by contract code at runtime to read storage, emit events, get caller, etc.
 - Accessed via `self.env()` inside a contract impl
-- Wrapped in `Rc<RefCell<dyn ContractContext>>` by `ContractEnv`
 
 ## Smart Pointer Conventions
 
