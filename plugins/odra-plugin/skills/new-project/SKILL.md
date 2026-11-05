@@ -152,9 +152,10 @@ tests, `/odra-plugin:deploy-to-livenet` to deploy.
 
 - [`docs-map.md`](../../reference/docs-map.md) — index of the whole documentation set; read it when
   something here is missing or looks out of date
-- [Ubuntu / WSL setup](https://odra.dev/docs/getting-started/ubuntu-wsl-setup) and
-  [macOS setup](https://odra.dev/docs/getting-started/macos-setup) — if scaffolding or the first
-  build fails on a fresh machine, their troubleshooting tables are keyed by error message
+- [macOS setup](https://odra.dev/docs/getting-started/macos-setup) and
+  [Ubuntu / WSL setup](https://odra.dev/docs/getting-started/ubuntu-wsl-setup) — if scaffolding or the
+  first build fails on a fresh machine, both have a troubleshooting table keyed by error message.
+  Pick the page for the user's platform (`uname -s`)
 - [Directory structure](https://odra.dev/docs/basics/directory-structure) and
   [Odra.toml](https://odra.dev/docs/basics/odra-toml) — the generated layout in full
 - [Cargo Odra](https://odra.dev/docs/basics/cargo-odra) — every `cargo odra` command and flag

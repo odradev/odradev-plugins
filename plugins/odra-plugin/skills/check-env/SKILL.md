@@ -15,10 +15,15 @@ Validates that all prerequisites for Odra development are installed.
 the Rust toolchain and the wasm target — resolve differently depending on the working
 directory, and checking from the wrong place reports a healthy environment that cannot build.
 
-Upstream reference: [Installation guide](https://odra.dev/docs/getting-started/installation), or
-[Ubuntu / WSL setup](https://odra.dev/docs/getting-started/ubuntu-wsl-setup) for exact commands on
-Linux and a troubleshooting table keyed by error message.
+Upstream reference: [Installation guide](https://odra.dev/docs/getting-started/installation), plus a
+per-platform page of exact commands with a troubleshooting table keyed by error message —
+[macOS setup](https://odra.dev/docs/getting-started/macos-setup) and
+[Ubuntu / WSL setup](https://odra.dev/docs/getting-started/ubuntu-wsl-setup).
 [`docs-map.md`](../../reference/docs-map.md) indexes the rest of the documentation.
+
+**Detect the platform first** (`uname -s` → `Darwin` or `Linux`) and give only that platform's fix
+commands. Offering `apt` commands to a macOS user is noise, and the binaryen advice genuinely
+differs between the two — see the wasm-opt check below.
 
 ---
 
@@ -47,14 +52,20 @@ If missing:
 pkg-config --modversion openssl
 ```
 
-`cargo-odra` depends on `openssl-sys`, which finds OpenSSL through `pkg-config` at build time.
-Without it, installing `cargo-odra` fails with *"this requires the pkg-config utility to find
-OpenSSL"*. Only needed to build `cargo-odra` itself — skip this check if `cargo odra --version`
+`cargo-odra` depends on `openssl-sys` and `libgit2-sys`, which find OpenSSL through `pkg-config` at
+build time. Without it, installing `cargo-odra` fails with *"this requires the pkg-config utility to
+find OpenSSL"*. Only needed to build `cargo-odra` itself — skip this check if `cargo odra --version`
 already works.
 
 If missing:
 - Debian/Ubuntu: `sudo apt install pkg-config libssl-dev`
 - Fedora: `sudo dnf install pkg-config openssl-devel`
+- macOS: `brew install openssl@3` — and **skip the `pkg-config` check itself on macOS**. `openssl-sys`
+  looks directly in `/opt/homebrew/opt/openssl@3` (Apple silicon) or `/usr/local/opt/openssl@3`
+  (Intel) before trying anything else, then falls back to `brew --prefix openssl@3`; it never needs
+  `pkg-config` to find Homebrew's OpenSSL. A missing `pkg-config` is not what is breaking a macOS
+  build, so do not report it as a problem there. The symptom to look for instead is
+  `Could not find directory of OpenSSL installation`.
 
 ### Rust toolchain
 
@@ -74,8 +85,21 @@ If rustup itself is missing:
 - `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y`, then
   `. "$HOME/.cargo/env"`
 
-Do not suggest a distro-packaged `rustc` (`apt install rustc`). It cannot switch to the pinned
-nightly.
+Do not suggest a package-manager `rustc` — neither `apt install rustc` nor `brew install rust`. They
+cannot switch to the pinned nightly.
+
+`. "$HOME/.cargo/env"` is the **sh/bash/zsh** line. Check the user's shell before handing it over
+(`echo $SHELL`) — rustup writes a separate file per shell, and sourcing the wrong one leaves
+`cargo: command not found`:
+
+| Shell | Line |
+| --- | --- |
+| sh, bash, zsh | `. "$HOME/.cargo/env"` |
+| fish | `source "$HOME/.cargo/env.fish"` |
+| tcsh | `source "$HOME/.cargo/env.tcsh"` |
+
+The installer prints lines for nushell, pwsh and xonsh too, but a standard `rustup.rs` install only
+writes those three files — `ls ~/.cargo/env*` is the reliable check.
 
 ### wasm32-unknown-unknown target
 
@@ -142,8 +166,13 @@ Unknown option '--llvm-memory-copy-fill-lowering'
 
 Treat an installed-but-older-than-121 binaryen as a failure, not a pass.
 
-Distribution packages are usually too old — Ubuntu 24.04 ships 108, Ubuntu 26.04 ships 120. Do not
-recommend `apt install binaryen`.
+**Linux** distribution packages are usually too old — Ubuntu 24.04 ships 108, Ubuntu 26.04 ships 120.
+Do not recommend `apt install binaryen`.
+
+**Homebrew is not affected** — it currently ships binaryen 131. On macOS `brew install binaryen` is
+simply the right answer, and there is no version trap to warn the user about. If a Mac *does* report
+a `wasm-opt` older than 121, the cause is a second `wasm-opt` earlier on `PATH`, not Homebrew — check
+`which -a wasm-opt`.
 
 If missing or too old:
 - Linux: download a release from https://github.com/WebAssembly/binaryen/releases and install it,
@@ -204,7 +233,7 @@ If everything is OK, report: "Environment is ready for Odra development."
 
 If items are missing, list the install commands and explain what each tool is for:
 - **C toolchain**: the linker every Rust build needs
-- **pkg-config + OpenSSL**: build-time dependency of `cargo-odra`
+- **pkg-config + OpenSSL**: build-time dependency of `cargo-odra` (on macOS, OpenSSL only)
 - **Rust toolchain**: the pinned nightly the project compiles with (`rust-toolchain.toml`)
 - **wasm32-unknown-unknown**: WebAssembly compilation target for smart contracts
 - **cargo-odra**: Odra's build/test tool — wraps cargo with WASM compilation steps (0.2.0 goes with Odra 2.10)
@@ -212,8 +241,11 @@ If items are missing, list the install commands and explain what each tool is fo
 - **wasm-strip**: strips debug info from WASM binaries
 - **Docker**: runs a local Casper blockchain node for testing deployments
 
-On Ubuntu or WSL, offer [Ubuntu / WSL setup](https://odra.dev/docs/getting-started/ubuntu-wsl-setup)
-— it is the same list as a single copy-pasteable block.
+Then offer the page for the user's platform — each ends with the same list as a single
+copy-pasteable block:
+
+- macOS → [macOS setup](https://odra.dev/docs/getting-started/macos-setup)
+- Ubuntu or WSL → [Ubuntu / WSL setup](https://odra.dev/docs/getting-started/ubuntu-wsl-setup)
 
 ---
 

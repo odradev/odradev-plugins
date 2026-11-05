@@ -22,8 +22,9 @@ The plugin drives Odra's own toolchain — it does not replace it. Before instal
   usually too old)
 
 The [Installation guide](https://odra.dev/docs/getting-started/installation) covers all of them, and
-[Ubuntu / WSL setup](https://odra.dev/docs/getting-started/ubuntu-wsl-setup) has verified
-copy-pasteable commands for Linux.
+there are verified copy-pasteable command lists per platform:
+[macOS setup](https://odra.dev/docs/getting-started/macos-setup) and
+[Ubuntu / WSL setup](https://odra.dev/docs/getting-started/ubuntu-wsl-setup).
 Once the plugin is installed, `/odra-plugin:check-env` verifies the setup for you, and
 `/odra-plugin:new-project` scaffolds a project with `cargo odra new`.
 

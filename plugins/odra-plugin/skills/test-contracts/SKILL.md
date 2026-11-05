@@ -4,7 +4,7 @@ description: >
   Run unit and integration test on in-memory OdraVM or (and) real WASMs on CasperVM
   and report results.
   Use when the user says "test contract", "verify contract(s)", "unit test".
-allowed-tools: Bash(cargo odra *), Bash(${CLAUDE_SKILL_DIR}/scripts/*), Read, AskUserQuestion, WebFetch
+allowed-tools: Bash(cargo odra *), Read, AskUserQuestion, WebFetch
 ---
 
 Use `AskUserQuestion` tool to verify the user intent if not explicitly expressed:
@@ -18,22 +18,25 @@ cargo odra test
 
 Running tests on `CasperVM`:
 
-First, check if WASMs need to be rebuilt (the script finds the project root by `Odra.toml` and
-compares every `*.rs`, `Odra.toml` and `Cargo.toml` with the newest file in `wasm/`):
-
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/needs_rebuild.sh
+cargo odra test -b casper
 ```
 
-Then run tests with the appropriate flag based on the result:
+This builds every contract in `Odra.toml` to wasm, runs `wasm-opt` and `wasm-strip` over each one,
+and then executes the same tests against Casper's execution engine. `cargo odra` tracks whether the
+wasm is stale, so there is no separate rebuild step to decide on — pass `--skip-build` (`-s`) only
+when you have just built and want to reuse the existing wasm. In a workspace the wasm lands in the
+one `wasm/` directory at the root (Odra 2.10 looks there from every member).
 
-```bash
-# If rebuild is needed (needs_rebuild.sh exited 0):
-${CLAUDE_SKILL_DIR}/scripts/run_tests.sh --rebuild
+:::note
+The templates do **not** generate a `scripts/` directory, and this skill ships none. Drive
+`cargo odra test` directly. If a particular project happens to have its own `scripts/`, those are
+the user's, not Odra's.
+:::
 
-# If no rebuild is needed (needs_rebuild.sh exited 1):
-${CLAUDE_SKILL_DIR}/scripts/run_tests.sh
-```
+CasperVM runs require the `wasm32-unknown-unknown` target plus `wasm-opt` and `wasm-strip` on
+`PATH`; OdraVM requires none of them. If `-b casper` fails on tooling rather than on a test
+assertion, run `/odra-plugin:check-env` before touching the contract.
 
 Arguments after `--` go to `cargo test`, so a single test or printed output work as usual:
 
@@ -57,6 +60,9 @@ If tests fail, help the user fix the issues. Explain any errors in context.
 - **OdraVM rolls back a reverted call completely** — storage, balances, events, contracts it
   deployed, the code of a failed upgrade — like Casper. A test that counted events of a reverted
   call sees fewer events than it did on 2.9, and the same number as on CasperVM.
+- **OdraVM does not model package locking.** A contract deployed without
+  `InstallConfig::upgradable` can be upgraded on OdraVM but fails on CasperVM with
+  `A locked contract cannot be upgraded`; an upgrade test must use `deploy_with_cfg`.
 - **Panics print again.** Since 2.10 OdraVM no longer silences `unwrap`/`expect`/assertion
   panics after the first call; a bare `VmError(Panic)` in the output is a real panic in contract
   code (arithmetic overflow, `unwrap` on `None`), not a revert.
