@@ -60,12 +60,15 @@ If missing:
 
 ```bash
 rustc --version
-cat rust-toolchain 2>/dev/null
+rustup show active-toolchain
+cat rust-toolchain.toml 2>/dev/null || cat rust-toolchain 2>/dev/null
 ```
 
-Odra projects pin a nightly in `rust-toolchain`. Inside the project, `rustc --version` should
-report that pinned version — rustup installs it automatically on first use, which is why the first
-build is slow.
+Odra projects pin a nightly. Projects generated from the Odra 2.10 templates do it in
+`rust-toolchain.toml` (`channel = "nightly-2026-01-01"`, plus the `rust-analyzer` component);
+older projects have a bare `rust-toolchain` file with just the channel name. Either way, inside the
+project `rustup show active-toolchain` should report that pinned version with "overridden by" —
+rustup installs it automatically on first use, which is why the first build is slow.
 
 If rustup itself is missing:
 - `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y`, then
@@ -76,13 +79,16 @@ nightly.
 
 ### wasm32-unknown-unknown target
 
-Check it against the **pinned** toolchain, not the default one:
+Check it against the **pinned** toolchain, not the default one. Run this **from inside the
+project directory** — there, the active toolchain is the pinned one, whether it is pinned by
+`rust-toolchain.toml` or by `rust-toolchain`:
 
 ```bash
-rustup target list --installed --toolchain "$(cat rust-toolchain)"
+rustup target list --installed
 ```
 
-If there is no `rust-toolchain` file, fall back to `rustup target list --installed`.
+Outside a project (no `Odra.toml` around), the command reports the default toolchain, which is not
+what the project builds with; say so in the report instead of calling it a pass.
 
 If missing, the fix must be run **from inside the project directory**:
 
@@ -107,6 +113,17 @@ If missing:
 
 Requires the C toolchain and `pkg-config`/OpenSSL above — check those first, since this is where
 their absence shows up.
+
+Version: **0.2.0 or newer** is the current release and the one to install;
+`cargo install cargo-odra --locked` also upgrades an older one. 0.1.8 still builds and tests a
+single-crate Odra 2.10 project, but it cannot build contracts from dependency crates
+(`fqn = "odra_modules::erc20::Erc20"` in `Odra.toml`) and it copies the wasm into every workspace
+member, where a stale copy can shadow a fresh build. Report the version: below 0.1.8 is a failure,
+0.1.8 is OLD.
+
+Note the pairing with the Odra version: cargo-odra 0.2.0 writes the wasm of a workspace only to the
+root `wasm/`, where Odra 2.10 looks and Odra 2.9 does not. A workspace project still on Odra 2.9
+needs either the bump to 2.10 or cargo-odra 0.1.8. Single-crate projects are unaffected.
 
 ### wasm-opt (binaryen) — version matters
 
@@ -174,7 +191,7 @@ Present a summary table:
 | pkg-config + OpenSSL      | OK/MISSING | install command    |
 | Rust toolchain (pinned)   | OK/MISSING | install command    |
 | wasm32-unknown-unknown    | OK/MISSING | install command    |
-| cargo-odra                | OK/MISSING | install command    |
+| cargo-odra (>= 0.2.0)     | OK/OLD/MISSING | install command |
 | wasm-opt (binaryen >= 121)| OK/OLD/MISSING | install command |
 | wasm-strip (wabt)         | OK/MISSING | install command    |
 | Docker (optional)         | OK/MISSING | install link       |
@@ -188,9 +205,9 @@ If everything is OK, report: "Environment is ready for Odra development."
 If items are missing, list the install commands and explain what each tool is for:
 - **C toolchain**: the linker every Rust build needs
 - **pkg-config + OpenSSL**: build-time dependency of `cargo-odra`
-- **Rust toolchain**: the pinned nightly the project compiles with
+- **Rust toolchain**: the pinned nightly the project compiles with (`rust-toolchain.toml`)
 - **wasm32-unknown-unknown**: WebAssembly compilation target for smart contracts
-- **cargo-odra**: Odra's build/test tool — wraps cargo with WASM compilation steps
+- **cargo-odra**: Odra's build/test tool — wraps cargo with WASM compilation steps (0.2.0 goes with Odra 2.10)
 - **wasm-opt**: optimizes WASM binaries for smaller contract size
 - **wasm-strip**: strips debug info from WASM binaries
 - **Docker**: runs a local Casper blockchain node for testing deployments
@@ -205,3 +222,11 @@ On Ubuntu or WSL, offer [Ubuntu / WSL setup](https://odra.dev/docs/getting-start
 A missing wasm target or wasm tooling does **not** block `cargo odra test` on OdraVM — only
 `cargo odra build`/`test -b casper` need them. If the user just wants to run tests and is blocked
 on binaryen, tell them they can proceed on OdraVM meanwhile.
+
+## Note on the project's Odra version
+
+While in the project, also read the `odra` version from `Cargo.toml`. The plugin's bundled
+reference targets Odra 2.10. A project on 2.9 or older still works with every skill, but point the
+user at the [migration guide to 2.10.0](https://odra.dev/docs/migrations/to-2.10.0) — for most
+projects it is a version bump — and prefer the matching versioned docs URL (see
+[`docs-map.md`](../../reference/docs-map.md)) when looking things up for it.

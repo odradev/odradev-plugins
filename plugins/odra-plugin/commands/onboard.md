@@ -32,7 +32,8 @@ Tell the user:
 > up several files that are easy to get subtly wrong by hand.
 
 Invoke `/odra-plugin:new-project`. Skip this step only if the user is already inside a project
-(an `Odra.toml` exists).
+(an `Odra.toml` exists). The generated project also contains `AGENTS.md` (imported by `CLAUDE.md`)
+with instructions for agents and a `.env.sample` for the deployment step later.
 
 ---
 
@@ -76,7 +77,9 @@ After generation, walk through the generated code and explain:
 >
 > Odra has a fast in-memory VM called **OdraVM** for unit tests. It simulates the blockchain without actually running one — tests execute in milliseconds.
 >
-> `odra_test::env()` creates a test environment. `ModuleName::deploy(&env, args)` deploys your contract into this environment. Then you call methods on the returned `HostRef` just like regular Rust method calls.
+> `odra_test::env()` creates a test environment. `ModuleName::deploy(&env, args)` deploys your contract into this environment. Then you call methods on the returned `HostRef` just like regular Rust method calls. A method that reverts panics the test; its `try_` twin returns a `Result` you can assert on.
+>
+> The same tests run unchanged on the real Casper execution engine with `cargo odra test -b casper`, and `env.take_snapshot()` / `env.restore_snapshot()` let several scenarios branch off one expensive setup.
 
 ### 4b — Run the tests
 
@@ -102,11 +105,11 @@ If they want to continue:
 >
 > OdraVM is great for testing logic, but a real deployment compiles your contract to WebAssembly (WASM) and sends it to a Casper node. The local node (NCTL) is an actual Casper blockchain running in Docker — same software as mainnet, just on your machine.
 >
-> The CLI tool (`cli/cli.rs`) handles deployment. The deploy script you saw earlier tells it which contracts to deploy and with what arguments.
+> The CLI binary (`bin/cli.rs`, built as `<project>_cli`; `cli/cli.rs` in a workspace) handles deployment. The deploy script inside it tells it which contracts to deploy and with what arguments, and it saves the deployed addresses to `resources/<chain>-contracts.toml` so later runs reuse them. The same binary later upgrades a contract (`upgrade <Contract> --gas ...`) and exposes every entry point as a command.
 
 ### 5b — Build WASM
 
-If didn't trigger tests on `CasperVM` build contracts:
+If the tests did not already run on `CasperVM` (which builds the wasm), build the contracts:
 
 ```bash
 cargo odra build
@@ -124,7 +127,7 @@ Invoke `/odra-plugin:deploy-to-livenet` targeting nctl.
 
 ### 5e — Explain what happened
 
-> Your contract is now deployed on a local Casper blockchain. The deploy hash is a unique identifier for this deployment. The CLI stored the contract address so future runs can interact with it without redeploying.
+> Your contract is now deployed on a local Casper blockchain. The deploy hash is a unique identifier for this deployment. The CLI stored the contract's package hash in `resources/casper-net-1-contracts.toml`, so future runs interact with it without redeploying — try `cargo run --bin <project>_cli -- status`, or call an entry point with `contract <Name> <method>`.
 
 ---
 
@@ -132,7 +135,7 @@ Invoke `/odra-plugin:deploy-to-livenet` targeting nctl.
 
 > **You've completed the Odra onboarding.** Here's what you can do next:
 >
-> - `/odra-plugin:deploy-to-livenet` — deploy to testnet or mainnet
+> - `/odra-plugin:deploy-to-livenet` — deploy to testnet or mainnet, or upgrade a deployed contract
 > - `/odra-plugin:setup-nctl` — set up a local node for testing and development
 > - `/odra-plugin:test-contracts` — run tests on OdraVM or/and CasperVM
 > - Instruct me to write code, fix bugs, or add features to your contracts - a specialized agent will handle it.

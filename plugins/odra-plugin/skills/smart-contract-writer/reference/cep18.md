@@ -50,7 +50,13 @@ pub fn init(
 )
 ```
 
+- exactly these four arguments — note the order, `symbol` before `name`
 - `initial_supply` is minted to the caller
+
+Gasless extensions live next to it in `odra-modules`: `Cep2612` adds `permit` (allowance by EIP-712
+signature) and `Cep3009` adds `transfer_with_authorization` / `receive_with_authorization` /
+`cancel_authorization`. The signing helper for tests and scripts is
+`odra_examples::contracts::gasless_cep18::authorization` in the Odra repository.
 
 ## CEP-18 Interface Methods
 
@@ -178,7 +184,7 @@ pub struct OurToken {
 #[odra::module]
 impl OurToken {
     pub fn init(&mut self, name: String, symbol: String, decimals: u8, initial_supply: U256) {
-        self.token.init(symbol, name, decimals, initial_supply, vec![], vec![], None);
+        self.token.init(symbol, name, decimals, initial_supply);
     }
 
     // Delegate standard CEP-18 interface
@@ -288,6 +294,7 @@ impl OurToken {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core::time::Duration;
     use odra::host::Deployer;
 
     #[test]
@@ -309,7 +316,7 @@ mod tests {
         assert_eq!(token.balance_of(&env.get_account(0)), U256::zero());
 
         // Advance past voting window
-        env.advance_block_time(60 * 11 * 1000);
+        env.advance_block_time(Duration::from_secs(60 * 11));
         token.tally();
 
         // Tokens minted + stake returned
@@ -326,7 +333,7 @@ mod tests {
         env.set_caller(env.get_account(0));
         token.vote(false, U256::from(1000));
 
-        env.advance_block_time(60 * 11 * 1000);
+        env.advance_block_time(Duration::from_secs(60 * 11));
         token.tally();
 
         // Majority wins — tokens minted

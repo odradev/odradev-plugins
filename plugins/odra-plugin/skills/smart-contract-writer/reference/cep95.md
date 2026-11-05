@@ -376,8 +376,8 @@ use odra::{
     prelude::*,
 };
 use crate::{
-    ticket_operator::TicketOperatorHostRef,
-    token::{Error, TicketId, TicketOfficeContractRef, TicketOfficeInitArgs},
+    ticket_operator::TicketOperator,
+    token::{Error, TicketOffice, TicketOfficeInitArgs},
 };
 
 #[test]
@@ -389,9 +389,10 @@ fn it_works() {
         total_supply: 100,
     };
 
+    // `deploy` is on the module struct, not on the ContractRef
     let operator = TicketOperator::deploy(&env, NoArgs);
-    let mut ticket_office = TicketOfficeContractRef::deploy(&env, init_args);
-    ticket_office.register_operator(operator.address().clone());
+    let mut ticket_office = TicketOffice::deploy(&env, init_args);
+    ticket_office.register_operator(operator.address());
 
     ticket_office.issue_ticket("Ev".to_string(), U512::from(100));
     ticket_office.issue_ticket("Ev".to_string(), U512::from(50));

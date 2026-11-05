@@ -44,16 +44,47 @@ pub fn transfer(&mut self, to: Address, amount: U256) {
 }
 ```
 
-## Native Events (Casper-specific)
+## Field types
 
-For events that need to be recorded in Casper's native event schema:
+The fields of an event must have a concrete `CLType`: numbers, `bool`, `String`, `Address`, `U256`
+and the like, a unit enum (an `#[odra::odra_type]` enum without data, serialized as `u8`), and
+`Option`, `Vec`, maps, `Result` and tuples of those. An `#[odra::odra_type]` struct or an enum with
+data has the `CLType` `Any`, which the Casper Event Standard rejects — also inside an `Option`, a
+`Vec` or a tuple. Since 2.10 Odra refuses such a contract early: deploying or upgrading it (any
+backend) and `cargo odra schema` panic with a message naming the event and the field. Flatten the
+struct into the event:
+
+```rust
+#[odra::odra_type]
+pub enum Side { Buy, Sell } // a unit enum is fine
+
+#[odra::event]
+pub struct Traded {
+    pub side: Side,
+    // not `pub price: Price` with `#[odra::odra_type] struct Price { amount, currency }`
+    pub price_amount: U256,
+    pub price_currency: String,
+}
+```
+
+An upgrade cannot change the schema of an event the contract already emits; add a new event.
+
+## Native Events (Casper 2.0 messages)
+
+`emit_event` writes a Casper Event Standard (CES) event into the contract's state, where any
+client can read event number N at any time. `emit_native_event` emits a Casper native message
+instead:
 
 ```rust
 self.env().emit_native_event(Transfer { from, to, amount });
 ```
 
-Most contracts use `emit_event`. Use `emit_native_event` only when targeting
-Casper's native CEP-47/CEP-78 event standards.
+A native message's payload travels only in the execution result of the transaction that emitted it;
+the chain keeps no readable list of past messages. On livenet the environment records the native
+events of the transactions it sends, so `native_events_count`, `get_native_event`,
+`emitted_native_event` and `last_call().emitted_native_events` answer from that record — events
+emitted before the environment was created, or by someone else, are not visible. Most contracts use
+`emit_event`; use native events when an indexer or the sidecar is the consumer.
 
 ## Asserting Events in Tests
 
@@ -90,6 +121,22 @@ assert!(env.emitted_native_event(&token, Transfer { ... }));
 assert!(env.emitted_native(&token, "Transfer"));
 assert_eq!(env.native_events_count(&token), 1);
 ```
+
+Native event counts carry on across an upgrade of the contract (also of a factory child).
+
+Events of the **last call only**, through the `HostRef`:
+
+```rust
+token.transfer(&bob, &amount);
+assert!(token.last_call().emitted("Transfer"));
+assert!(token.last_call().emitted_event(Transfer { .. }));
+```
+
+The events of a reverted call are gone on every backend (OdraVM rolls them back since 2.10), and
+`last_call()` of the first call after `deploy` no longer includes the events of `init`.
+
+In an odra-cli scenario `last_call()` has no events unless the scenario overrides
+`captures_events()` to return `true` (see `core/cli.md`).
 
 ## Complete Example
 

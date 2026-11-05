@@ -74,6 +74,26 @@ let err = contract.try_change_name("Bob".to_string()).unwrap_err();
 assert_eq!(err, Error::NotAnOwner.into());
 ```
 
+A revert in `init` or `upgrade` comes back the same way from `try_deploy` / `try_upgrade`, on every
+backend (livenet included since 2.10; it used to be an opaque `ContractDeploymentError`).
+
+## What is not a user error
+
+| You see | It means |
+|---|---|
+| `VmError(Panic)` (and, since 2.10, the panic message in the test output) | a raw Rust panic in contract code: arithmetic overflow, `unwrap()` on `None`, a failed `assert!`. Guard it and revert with your own variant instead. |
+| `ExecutionError::InvalidArg` (138) | an entry point argument exists but has the wrong type; `MissingArg` is a missing one |
+| a `bytesrepr` error (`LeftOverBytes`, `EarlyEndOfStream`) | a stored value read as the wrong type, usually a field whose type changed across an upgrade (2.10; it used to be `Formatting`) |
+| `OutOfGas` | the transaction ran out of the gas set with `env.set_gas` (livenet) |
+| `VmError::Other(..)` | livenet got an error code no schema knows |
+
+## Errors on livenet
+
+The node reports a failed transaction only as a number. The livenet backend names it from the
+contract schemas in `resources/casper_contract_schemas/` (the called contract's schema first, so two
+contracts reusing the code `1` are told apart), so keep them current with `cargo odra schema`
+whenever an error enum changes.
+
 ## Complete Example
 
 ```rust

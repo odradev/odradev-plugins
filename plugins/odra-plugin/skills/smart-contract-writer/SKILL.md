@@ -24,8 +24,8 @@ Check that `Odra.toml` exists at the project root. If it does not, **stop** and 
 
 Do not create the project yourself. This skill has no Bash access, so anything you produce by hand
 would be a guess at the template — missing `build.rs`, the `[[bin]]` targets, the pinned
-`rust-toolchain`, or the wasm32 cfg section — and would fail later in ways that look like contract
-bugs. Scaffolding is `new-project`'s job.
+`rust-toolchain.toml`, or the wasm32 cfg section — and would fail later in ways that look like
+contract bugs. Scaffolding is `new-project`'s job.
 
 ### 1. Clarify the user's intent
 
@@ -54,8 +54,8 @@ Read these files to understand the framework:
 2. [`contract-model.md`](./reference/core/contract-model.md) — `#[odra::module]`, HostRef, Deployer, init convention
 3. [`modules.md`](./reference/core/modules.md) — defining and composing reusable modules with `SubModule`
 4. [`cli.md`](./reference/core/cli.md) — writing deploy scripts and CLI scenarios, `load_or_deploy` pattern
-5. [`gotchas.md`](./reference/gotchas.md) — verified traps in Odra 2.9 (API signatures that differ from the
-   obvious guess, silent no-ops, OdraVM limitations). Read this every time; it is short and it is the
+5. [`gotchas.md`](./reference/gotchas.md) — verified traps in Odra 2.10 (API signatures that differ from the
+   obvious guess, new compile errors, OdraVM behaviour). Read this every time; it is short and it is the
    difference between compiling first try and burning a cycle on E0599.
 
 If any of these files don't exist, inform the caller that this project needs Odra context docs.
@@ -71,8 +71,10 @@ Based on the task, read the relevant reference files before writing code:
 | Defining or emitting events                                       | [`events.md`](./reference/events.md)                 |
 | Error enums, reverting, `unwrap_or_revert`                        | [`errors.md`](./reference/errors.md)                 |
 | Writing or fixing tests                                           | [`testing.md`](./reference/testing.md)               |
-| Factory, factory pattern                                          | [`factory.md`](./reference/factory.md)               |
-| CLI deploy scripts, scenarios, `load_or_deploy`                   | [`cli.md`](./reference/core/cli.md)                  |
+| Factory, factory pattern, upgrading child contracts               | [`factory.md`](./reference/factory.md)               |
+| Dapp registry, grouping the contracts of one dapp                 | [`dapp.md`](./reference/dapp.md)                     |
+| Offchain reads, call stack, debug output, ref helpers             | [`contract-model.md`](./reference/core/contract-model.md) |
+| CLI deploy scripts, scenarios, `load_or_deploy`, `upgrade`        | [`cli.md`](./reference/core/cli.md)                  |
 | A compile error that looks like it should have worked             | [`gotchas.md`](./reference/gotchas.md)               |
 
 Read only the files relevant to the current task. Do not load all reference files upfront.
@@ -82,7 +84,7 @@ but adapt as needed to the user's specific requirements and constraints.
 
 ### When the reference files are not enough
 
-They cover Odra 2.9 and are deliberately narrow. If a question falls outside them — a newer API, an
+They cover Odra 2.10 and are deliberately narrow. If a question falls outside them — a newer API, an
 unfamiliar module, an exact type signature — go upstream instead of guessing.
 
 Read [`docs-map.md`](../../reference/docs-map.md) and fetch the page it points to. It maps
@@ -105,22 +107,32 @@ documentation itself is silent. Do not guess an API you can look up in one `WebF
 - Use `self.env()` for on-chain context, never global state
 - All public entry points have proper access control if needed.
 - By default use the CEP-18 token standard when implementing a token contract.
-- In the deploy script, use `ContractType::load_or_deploy` to ensure idempotent deployments, 
-use `cspr!(500)` for gas amounts if not specified by the user.
+- A read that walks a whole collection (every holder, every token, a report) is an
+  `#[odra(offchain)]` function, never an entry point — it runs on the host, free and unbounded.
+- Event fields need concrete `CLType`s: flatten an `#[odra::odra_type]` struct into the event
+  (a unit enum is fine). Since 2.10 a contract with such a field is refused at deploy and schema time.
+- Never expose an unguarded mutating function of a module as an entry point (`raw_mint`,
+  `Erc20::mint`, `unchecked_grant_role`): wrap it behind the contract's own access check.
+- In the deploy script, use `ContractType::load_or_deploy` to ensure idempotent deployments,
+  use `cspr!(500)` for gas amounts if not specified by the user.
 
 ## Workflow
 
 Follow this process for every implementation task:
 
-1. **Understand the codebase** — read existing contracts in `contracts/src/`, `Odra.toml`, and `cli/cli.rs` to understand what exists
+1. **Understand the codebase** — read existing contracts in `src/` (`<crate>/src/` in a workspace), `Odra.toml`, and `bin/cli.rs` (`cli/cli.rs` in a workspace) to understand what exists; check the `odra` version in `Cargo.toml`
 2. **Write a failing test first** — in the contract's `#[cfg(test)] mod tests` block
 3. **Run the test to confirm it fails** — `cargo odra test`
 4. **Implement the minimal code to pass** — follow patterns from the context docs
 5. **Run tests to confirm they pass** — `cargo odra test`
 6. **Wire up registrations if needed:**
-   - New contract → add `[[contracts]]` entry in `Odra.toml`, add `pub mod` in `contracts/src/lib.rs`
-   - New CLI contract → add `.contract::<MyContract>()` in `cli/cli.rs`
-   - New scenario → add `.scenario::<MyScenario>(MyScenario)` in `cli/cli.rs`
+   - New contract → add `[[contracts]]` entry in `Odra.toml`, add `pub mod` in `src/lib.rs`
+   - New CLI contract → add `.contract::<MyContract>()` in `bin/cli.rs` (and deploy it in the deploy script)
+   - New scenario → add `.scenario(MyScenario)` in `bin/cli.rs`
+   - A factory → register both the child and the generated `<Child>Factory` in `Odra.toml`
+7. **Regenerate the schema when entry points, events or errors changed** — ask the user to run
+   `cargo odra schema` (this skill has no Bash); livenet names errors from
+   `resources/casper_contract_schemas/`
 
 ## What You Don't Do
 
@@ -132,7 +144,7 @@ Follow this process for every implementation task:
 
 Provide your output in this structure:
 1. **Contract Overview**: Brief description of what the contract does and its key components.
-2. **`src/lib.rs`** (or relevant file): Complete, compilable Rust code with the Odra contract.
+2. **`src/<module>.rs`** (and the `pub mod` line in `src/lib.rs`): Complete, compilable Rust code with the Odra contract.
 3. **`Cargo.toml`**: Required dependencies with versions from the documentation.
 4. **Tests**: Inline tests or a separate test module.
 5. **Usage Notes**: Key entry points, deployment instructions, or important caveats.
