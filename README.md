@@ -45,11 +45,20 @@ To verify it's active:
 
 ## Updating
 
-Pull the latest version of the marketplace and its plugins:
+Auto-update is off by default for third-party marketplaces, so pull new versions yourself:
 
 ```
-/plugin marketplace update
+/plugin marketplace update odradev-plugins
+/reload-plugins
 ```
+
+The first command refreshes the marketplace and updates the plugins installed from it; the second
+applies the update to the running session (a new session picks it up anyway). To get updates
+automatically, enable them once: `/plugin` → **Marketplaces** → `odradev-plugins` →
+**Enable auto-update** — or set `"autoUpdate": true` in the project settings below.
+
+The plugin declares no `version`: every commit on `main` is a new version, identified by its commit
+hash, so a push to `main` is a release.
 
 ## Project-level setup
 
@@ -62,7 +71,8 @@ To make the plugin available automatically for everyone working on your Odra pro
       "source": {
         "source": "github",
         "repo": "odradev/odradev-plugins"
-      }
+      },
+      "autoUpdate": true
     }
   },
   "enabledPlugins": {
@@ -71,7 +81,8 @@ To make the plugin available automatically for everyone working on your Odra pro
 }
 ```
 
-Anyone who clones the repo and trusts the project folder will be prompted to install the plugin.
+Anyone who clones the repo and trusts the project folder will be prompted to install the plugin, and
+`autoUpdate` keeps it current without manual `/plugin marketplace update` runs.
 
 ## Repository Structure
 
