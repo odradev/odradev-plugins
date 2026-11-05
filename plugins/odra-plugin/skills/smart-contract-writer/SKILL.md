@@ -31,6 +31,10 @@ contract bugs. Scaffolding is `new-project`'s job.
 
 Skip this step in the onboarding mode.
 
+When the request touches contracts that are already deployed, also look at the deploy script
+before asking: whether they were installed upgradable decides between an upgrade and a redeploy,
+and the user should hear that in the first round of questions.
+
 Use `AskUserQuestion` to confirm details that are not explicitly stated.
 Ask about the aspects that are relevant to the task — skip questions the user
 has already answered or that don't apply.
@@ -113,8 +117,14 @@ documentation itself is silent. Do not guess an API you can look up in one `WebF
   (a unit enum is fine). Since 2.10 a contract with such a field is refused at deploy and schema time.
 - Never expose an unguarded mutating function of a module as an entry point (`raw_mint`,
   `Erc20::mint`, `unchecked_grant_role`): wrap it behind the contract's own access check.
-- In the deploy script, use `ContractType::load_or_deploy` to ensure idempotent deployments,
-  use `cspr!(500)` for gas amounts if not specified by the user.
+- In the deploy script, deploy idempotently **and upgradable**:
+  `ContractType::load_or_deploy_with_cfg(env, None, args, InstallConfig::upgradable::<ContractType>(), container, cspr!(500))`.
+  A plain `load_or_deploy` installs a locked package that can never be upgraded; use it only when the
+  user wants an immutable contract. `cspr!(500)` is the default gas if the user gives none.
+- Changing a contract that is already deployed: first read how it was installed (locked contracts
+  can only be redeployed, tell the user), then append new fields after the existing ones and add an
+  `upgrade` entry point that initialises them — never reorder fields. See `contract-model.md`
+  (Upgrades) and `dapp.md` (retrofit recipe).
 
 ## Workflow
 

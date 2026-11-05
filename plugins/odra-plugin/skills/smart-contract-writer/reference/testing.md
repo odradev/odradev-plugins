@@ -180,6 +180,29 @@ contract deployed or upgraded after the snapshot is gone, or back to its old cod
 snapshot is kept. The caller set with `set_caller` and the gas report are not part of it. Works on
 OdraVM and CasperVM; livenet panics.
 
+## Testing an upgrade
+
+Install the first version upgradable — a plain `deploy` is locked on CasperVM and livenet (OdraVM
+does not model the lock, so the test would pass there and fail with
+`A locked contract cannot be upgraded` under `-b casper`):
+
+```rust
+use odra::host::{Deployer, HostRef, InstallConfig, NoArgs};
+
+let env = odra_test::env();
+let mut v1 = Counter::deploy_with_cfg(&env, CounterInitArgs { start: 10 }, InstallConfig::upgradable::<Counter>());
+v1.increment();
+
+// `upgrade(&mut self, registry: Address)` in the new code => CounterUpgradeArgs { registry }
+let v2 = Counter::try_upgrade(&env, v1.address(), CounterUpgradeArgs { registry: registry.address() }).unwrap();
+assert_eq!(v2.get(), 11);                       // storage survived
+assert_eq!(v2.get_dapp_registry(), registry.address());
+```
+
+`try_upgrade` is the host-side call and returns `OdraResult<HostRef>`; `Counter::upgrade(..)` would
+resolve to your own entry point. In a unit test the "old" and "new" versions are the same code, so
+the test checks the migration logic, not the layout change itself — keep new fields appended.
+
 ## Loading and addressing deployed contracts
 
 ```rust
@@ -228,6 +251,8 @@ swallows it) and comes back as `VmError::Panic`.
   a stand-in access URef and a simplified upgrade permission check (direct caller == factory deployer).
 - A plain Rust panic in a contract rolls nothing back, and a reverted deploy still uses up an
   address.
+- Package locking is not modelled: a contract deployed without `InstallConfig::upgradable` can be
+  upgraded on OdraVM, but not on CasperVM or livenet.
 - Gas is not metered; only CasperVM and livenet report real costs.
 
 ## Getting a Contract's Env Reference

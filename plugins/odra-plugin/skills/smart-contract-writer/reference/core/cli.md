@@ -74,7 +74,7 @@ env.set_gas(cspr!(1.5));
 ## `load_or_deploy` Pattern
 
 In your deploy script, use `ContractType::load_or_deploy(env, args, container, gas)`.
-On first run it deploys (upgradable) and saves the address. On subsequent runs it loads the existing
+On first run it deploys and saves the address. On subsequent runs it loads the existing
 contract from `resources/<chain>-contracts.toml`:
 
 ```rust
@@ -97,6 +97,31 @@ fn deploy(&self, env: &HostEnv, container: &mut DeployedContractsContainer)
     Ok(())
 }
 ```
+
+### Deploy upgradable — decide at the first deploy
+
+`load_or_deploy` calls `try_deploy`, which installs a **locked** package: Casper refuses to upgrade it
+for good (`A locked contract cannot be upgraded`), so the only way forward is a redeploy under a new
+address. If the contract may ever need an upgrade — and most do — install it upgradable with
+`load_or_deploy_with_cfg` (the second argument is an optional custom package name):
+
+```rust
+use odra::host::InstallConfig;
+use odra_cli::DeployerExt;
+
+let _token = MyToken::load_or_deploy_with_cfg(
+    env,
+    None,
+    MyTokenInitArgs { /* .. */ },
+    InstallConfig::upgradable::<MyToken>(),
+    container,
+    cspr!(350),
+)?;
+```
+
+Prefer this form in generated deploy scripts unless the user explicitly wants an immutable contract.
+Before promising an upgrade of an already deployed contract, read its deploy script: a plain
+`load_or_deploy` or `try_deploy` means it is locked.
 
 ## Loading a deployed contract elsewhere
 
@@ -186,14 +211,16 @@ impl Scenario for RenameScenario {
 ## Commands
 
 Besides `deploy`, `contract` and `scenario`, which you register yourself, every CLI gets these
-built in:
+built in. A contract from a dependency crate (`fqn = "odra_modules::dapp::OwnedDappRegistry"` in
+`Odra.toml`) is registered like any other (`.contract::<OwnedDappRegistry>()`) and appears under
+its struct name.
 
 | Command | What it does |
 |---|---|
 | `deploy` | runs the deploy script; writes `resources/<chain>-contracts.toml` |
 | `contract <Name> <method> [--arg v..] [--gas ..]` | calls an entry point (also `new_contract` / `upgrade_child_contract` of a factory); `#[odra(offchain)]` functions are listed too and take no `--gas` |
 | `scenario <name> [--arg v..]` | runs a registered scenario |
-| `upgrade <Name> --gas .. [--upgrade args]` | upgrades the contract from the contracts file with `wasm/<Name>.wasm`, calling its `upgrade` entry point (2.10) |
+| `upgrade <Name> --gas .. [--<arg> <value>..]` | upgrades the contract from the contracts file with `wasm/<Name>.wasm`, calling its `upgrade` entry point; the arguments of `upgrade` are flat flags named after its parameters (2.10) |
 | `upgrade-children <Factory> --gas .. [--upgrade args] [--batch-size N]` | upgrades every child of a factory with the factory's current code, one transaction per batch (2.10) |
 | `status` | lists deployed contracts and their registration status |
 | `inspect <Name>` | prints the entry points, arguments and types of a contract |
@@ -221,6 +248,7 @@ Examples:
 ```sh
 cargo run --bin odra_cli -- contract DogContract rename --new_name "Doggy" --gas 2500000000
 cargo run --bin odra_cli -- upgrade DogContract --gas 400cspr
+cargo run --bin odra_cli -- upgrade Flipper --registry hash-0878bb…9300f21 --gas 400cspr   # `upgrade(&mut self, registry: Address)`
 cargo run --bin odra_cli -- upgrade-children CounterFactory --new_value 42 --gas 900cspr --batch-size 10
 cargo run --bin odra_cli -- storage DogContract name
 cargo run --bin odra_cli -- --state-root-hash <hex> contract DogContract name
@@ -229,9 +257,16 @@ cargo run --bin odra_cli -- --state-root-hash <hex> contract DogContract name
 `--help` (of any subcommand), `--version`, `completions` and `config` work without a livenet
 configuration; the network commands ask for a missing `ODRA_CASPER_LIVENET_*` value and retry.
 
-### `upgrade` options
+### `upgrade` prerequisites and options
 
-They map to the fields of `UpgradeConfig`: `--force-create-upgrade-group` (contracts deployed with
+The contract must have been installed upgradable (`InstallConfig::upgradable`, see above); a locked
+package fails with `A locked contract cannot be upgraded`. Run it as the account that installed the
+contract (it holds the upgrade rights). `upgrade <Name> --help` lists the flags, named after the
+parameters of the contract's `upgrade` entry point. An `Address` argument takes a `hash-…` package
+hash or an `account-hash-…`; the hash of another deployed contract is in `status` or in the contracts
+file — there is no automatic handoff, the user copies it.
+
+The remaining options map to the fields of `UpgradeConfig`: `--force-create-upgrade-group` (contracts deployed with
 Odra 2.2 or earlier, or not with Odra at all), `--allow-key-override [BOOL]` (default true),
 `--package-named-key <NAME>` (default: the contract's name, or the `named_contract` name). The
 package hash does not change, so the contracts file stays as it is. `upgrade` is no longer listed
@@ -245,9 +280,10 @@ among the entry points of the `contract` command.
 | `Contract::try_deploy_with_cfg()` | Deploy with custom `InstallConfig` |
 | `Contract::try_upgrade(env, address, args)` | Upgrade a deployed, upgradable contract |
 | `Contract::try_upgrade_with_runtime_args(..)` | Same, with upgrade arguments composed at runtime (2.10) |
-| `DeployerExt::load_or_deploy()` | Deploy once (upgradable), then load from the contracts file on subsequent runs |
+| `DeployerExt::load_or_deploy()` | Deploy once (**locked**, cannot be upgraded), then load from the contracts file on subsequent runs |
+| `DeployerExt::load_or_deploy_with_cfg(env, None, args, InstallConfig::upgradable::<T>(), container, gas)` | Same, installed upgradable |
 
-For upgradeable contracts use `InstallConfig::upgradable::<ContractType>()`. Since 2.10,
+Only `InstallConfig::upgradable::<ContractType>()` makes a contract upgradable. Since 2.10,
 `#[odra::module(name = "..")]` also names the key the package hash is stored under
 (`<name>_package_hash`).
 
@@ -309,7 +345,10 @@ The plugin's `setup-nctl` skill extracts the NCTL keys to `.node-keys/secret_key
   (wasm not found, gas not set, node unreachable).
 - Errors are named from the schemas in `resources/casper_contract_schemas/` (the called contract's
   schema first) — keep them current with `cargo odra schema`.
-- Getters and `#[odra(offchain)]` functions run locally against the chain state; a revert comes
-  back from `try_*` as `Err`.
+- Getters and `#[odra(offchain)]` functions run **your local code** against the chain state; a
+  revert comes back from `try_*` as `Err`. Consequence: they do not prove which version is on chain.
+  After a failed upgrade, a getter that only exists in the new code still answers locally (e.g.
+  `DappRegistryNotSet` instead of `No such method`). A mutating call is executed by the node and
+  fails with `No such method` on old code; the upgrade's own transaction result is the proof.
 - `env.gas_report()` and `env.last_call_gas_cost()` work; reads are cached per state root hash and
   retried with backoff on HTTP 429.

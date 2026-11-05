@@ -177,6 +177,23 @@ obvious sense.
 - **`DappRegistryBase`/`DappContractBase` check no caller.** Their mutating functions are plain Rust
   methods; the composing contract guards them. The ready-made `OwnedDappRegistry` uses `Ownable`.
 
+## Upgrades
+
+- **`deploy`, `try_deploy` and odra-cli's `load_or_deploy` install a locked package.** It can never
+  be upgraded (`A locked contract cannot be upgraded`), only redeployed. Only
+  `InstallConfig::upgradable::<T>()` — via `deploy_with_cfg` in tests and `load_or_deploy_with_cfg`
+  in a deploy script — makes a contract upgradable. Before writing an `upgrade` for a deployed
+  contract, read how it was installed and tell the user if it is locked.
+- **OdraVM does not model the lock**, so an upgrade test passes on OdraVM and fails on CasperVM.
+- **Storage is addressed by field position: append new fields, never reorder or remove.** A new
+  `SubModule` or `Var` goes after the existing fields; `upgrade` initialises it.
+- **`Contract::upgrade(&env, ..)` is not the host-side upgrade** — with an `upgrade` entry point in
+  the module it resolves to that method (`expected &mut Contract, found &HostEnv`). The host call is
+  `Contract::try_upgrade(&env, address, ContractUpgradeArgs { .. })`.
+- **Order of a retrofit:** deploy anything new (a registry) → `upgrade` the existing contracts →
+  then register/wire them. A registry verifies `get_dapp_registry` on the member, which the old code
+  does not have (`No such method`).
+
 ## Livenet / deployment
 
 - **A generated project needs no `livenet` feature.** `odra-cli` (a dependency of the template)
@@ -192,6 +209,10 @@ obvious sense.
   The templates git-ignore `.env`, `*.env` and `secret_key*.pem`.
 - **Extra livenet accounts are numbered from 1** (`ODRA_CASPER_LIVENET_KEY_1`); account 0 is
   `ODRA_CASPER_LIVENET_SECRET_KEY_PATH`.
+- **Livenet getters run your local code.** A `&self` entry point is executed on your machine against
+  the chain state, so it works even if the chain still runs the old version — after a failed upgrade
+  a new getter answers `DappRegistryNotSet`, not `No such method`. Mutating calls run on the node and
+  fail honestly. Trust the upgrade transaction's result, not a getter, for "is the new code live".
 - **Errors come back named only if the schemas are current.** Livenet decodes a user error against
   `resources/casper_contract_schemas/` (the called contract's schema first); an unknown code is
   `VmError::Other`. Run `cargo odra schema` after changing errors.

@@ -107,6 +107,11 @@ If they want to continue:
 >
 > The CLI binary (`bin/cli.rs`, built as `<project>_cli`; `cli/cli.rs` in a workspace) handles deployment. The deploy script inside it tells it which contracts to deploy and with what arguments, and it saves the deployed addresses to `resources/<chain>-contracts.toml` so later runs reuse them. The same binary later upgrades a contract (`upgrade <Contract> --gas ...`) and exposes every entry point as a command.
 
+Mention one thing about the generated deploy script before deploying anywhere that matters: it
+uses `load_or_deploy`, which installs contracts that cannot be upgraded later. For the local node
+this is fine; for testnet or mainnet the user decides first, and `smart-contract-writer` switches the
+script to an upgradable install if they want one.
+
 ### 5b — Build WASM
 
 If the tests did not already run on `CasperVM` (which builds the wasm), build the contracts:

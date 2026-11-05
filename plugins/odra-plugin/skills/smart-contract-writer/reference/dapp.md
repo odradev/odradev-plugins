@@ -246,6 +246,82 @@ assert_eq!(registry.get_dapp_contracts(), vec![registry.address(), spawner.addre
 Register `DappCounter`, `DappCounterFactory` and `DappCounterSpawner` in `Odra.toml`. The test runs
 on OdraVM and CasperVM alike.
 
+## Retrofitting dapp support to deployed contracts
+
+"Add dapp support to our contracts" usually arrives after the contracts are live. Verified recipe
+(Odra 2.10, cargo-odra 0.2.0):
+
+1. **Check that the contracts can be upgraded.** Read the deploy script: `load_or_deploy` or
+   `try_deploy` without `InstallConfig::upgradable` installed a *locked* package, which cannot be
+   upgraded (`A locked contract cannot be upgraded`); the only option is a redeploy under a new
+   address — say so before writing any `upgrade`. Switch the script to `load_or_deploy_with_cfg`
+   with `InstallConfig::upgradable::<T>()` so the next deployment is upgradable.
+2. **Add the members' fields and an `upgrade`.** Append the new submodules *after* the existing
+   fields (storage is addressed by position); `upgrade` bootstraps them. The upgrader is the account
+   holding the upgrade rights, so it is a sound first owner:
+
+   ```rust
+   #[odra::module]
+   pub struct Counter {
+       value: Var<u32>,                      // existing
+       ownable: SubModule<Ownable>,          // appended
+       dapp: SubModule<DappContractBase>,    // appended
+   }
+
+   #[odra::module]
+   impl Counter {
+       pub fn init(&mut self, start: u32) {  // unchanged signature: fresh deploys still work
+           self.value.set(start);
+           self.ownable.init(self.env().caller());
+       }
+
+       /// Runs once, during the upgrade: `upgrade Counter --registry <hash> --gas ..`
+       pub fn upgrade(&mut self, registry: Address) {
+           self.ownable.init(self.env().caller());
+           self.dapp.set_dapp_registry(&registry);
+       }
+
+       pub fn set_dapp_registry(&mut self, registry: &Address) {
+           self.ownable.assert_owner(&self.env().caller());
+           self.dapp.set_dapp_registry(registry);
+       }
+
+       delegate! {
+           to self.dapp { fn get_dapp_registry(&self) -> Address; }
+           to self.ownable { fn get_owner(&self) -> Address; }
+       }
+       // ... existing entry points ...
+   }
+   ```
+3. **Build the registry from `odra-modules`.** `odra-modules` in `Cargo.toml`,
+   `fqn = "odra_modules::dapp::OwnedDappRegistry"` in `Odra.toml`, and `use odra_modules;` in both
+   `bin/build_contract.rs` and `bin/build_schema.rs`. Deploy it from the deploy script
+   (`OwnedDappRegistry::load_or_deploy_with_cfg(env, None, NoArgs, InstallConfig::upgradable::<OwnedDappRegistry>(), container, cspr!(350))`)
+   and register it in the CLI (`.contract::<OwnedDappRegistry>()`, named `OwnedDappRegistry`).
+4. **Registration scenario.** `add_dapp_contract` can only be called after each member runs the new
+   code (the registry calls the member's `get_dapp_registry`), so it cannot be part of `deploy`.
+   Write an idempotent scenario: `container.contract_ref::<OwnedDappRegistry>(env)?`, set the
+   metadata, then `try_add_dapp_contract(&member.address(), false)` for every member that is not yet
+   `is_dapp_contract`.
+5. **Test** with `deploy_with_cfg(.., InstallConfig::upgradable)` + `try_upgrade` (see `testing.md`).
+
+Runbook for the user (binary `<project>_cli`, NCTL config selected with `ODRA_CASPER_LIVENET_ENV`):
+
+```sh
+cargo odra build                                   # new wasm for the members and the registry
+cargo run --bin my_project_cli -- deploy           # loads the members, deploys OwnedDappRegistry
+cargo run --bin my_project_cli -- status           # copy the OwnedDappRegistry package hash
+cargo run --bin my_project_cli -- upgrade Flipper --registry hash-… --gas 400cspr
+cargo run --bin my_project_cli -- upgrade Counter --registry hash-… --gas 400cspr
+cargo run --bin my_project_cli -- scenario register-dapp --name "My Dapp"
+cargo run --bin my_project_cli -- contract OwnedDappRegistry get_dapp_contracts
+```
+
+Run the upgrades as the account that installed the contracts. The registry hash is copied by hand
+from `status` or `resources/<chain>-contracts.toml`; there is no automatic handoff into `upgrade`.
+Storage of the members survives (`Counter.get` still returns the old value), their package hashes do
+not change.
+
 ## Events and errors
 
 | Event | Emitted by | Fields |

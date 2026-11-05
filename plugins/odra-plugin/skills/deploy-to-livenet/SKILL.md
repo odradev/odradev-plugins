@@ -76,7 +76,16 @@ Confirm with the user before any mainnet transaction — it costs real CSPR.
 
 ---
 
-## Step 3 — Build the wasm
+## Step 3 — Check how the deploy script installs the contracts
+
+Before the first deployment to a network the user cares about (testnet, mainnet), read the deploy
+script in `bin/cli.rs` (`cli/cli.rs` in a workspace). The project template deploys with
+`load_or_deploy`, which installs a **locked** package: it can never be upgraded, only redeployed
+under a new address. If the contracts may need an upgrade later, have `smart-contract-writer`
+switch the script to `load_or_deploy_with_cfg(.., InstallConfig::upgradable::<Contract>(), ..)`
+before deploying, and say so to the user either way. On nctl it does not matter — redeploying is free.
+
+## Step 4 — Build the wasm
 
 The CLI deploys `wasm/<Contract>.wasm`. Build (or rebuild after source changes) first:
 
@@ -89,7 +98,7 @@ without it.
 
 ---
 
-## Step 4 — Run Deployment
+## Step 5 — Run Deployment
 
 Run the bundled deploy script:
 
@@ -119,17 +128,24 @@ ${CLAUDE_SKILL_DIR}/scripts/deploy.sh nctl scenario flip --number 3
 
 ---
 
-## Step 5 — Upgrading an already deployed contract
+## Step 6 — Upgrading an already deployed contract
 
 Since Odra 2.10 the CLI upgrades a contract from the contracts file without a custom scenario. The
-contract must have been deployed upgradable (`InstallConfig::upgradable`, which `load_or_deploy`
-does by default). After `cargo odra build` with the new code:
+contract must have been **installed upgradable**: `load_or_deploy_with_cfg` /
+`try_deploy_with_cfg` with `InstallConfig::upgradable::<T>()`. A plain `load_or_deploy` or
+`try_deploy` installs a locked package, and the upgrade fails with
+`A locked contract cannot be upgraded` — then only a redeploy under a new address is possible; tell
+the user before spending gas. Run the upgrade as the account that installed the contract. After
+`cargo odra build` with the new code:
 
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/deploy.sh <network> upgrade <Contract> --gas 400cspr [--<upgrade arg> <value>...]
+# e.g. `upgrade(&mut self, registry: Address)`:
+${CLAUDE_SKILL_DIR}/scripts/deploy.sh nctl upgrade Counter --registry hash-0878bb…9300f21 --gas 400cspr
 ```
 
-The arguments are those of the contract's `upgrade` entry point. `--force-create-upgrade-group`,
+The arguments are those of the contract's `upgrade` entry point, as flat flags (`upgrade <Contract> --help`
+lists them). A package hash another contract needs comes from `status` or the contracts file. `--force-create-upgrade-group`,
 `--allow-key-override` and `--package-named-key` set the `UpgradeConfig` (see
 `upgrade <Contract> --help`). The package hash does not change, so the contracts file stays as it is.
 
@@ -143,7 +159,7 @@ ${CLAUDE_SKILL_DIR}/scripts/deploy.sh <network> upgrade-children <Factory> --gas
 
 ---
 
-## Step 6 - Summary and Reporting
+## Step 7 - Summary and Reporting
 
 Do not truncate the output. If the deploy was successful, report success and the relevant hashes
 (and where they were saved: `resources/<chain>-contracts.toml`). If there were errors, report
@@ -153,7 +169,7 @@ schemas current with `cargo odra schema` so errors are named rather than numbere
 
 ---
 
-## Step 7 - Cleanup
+## Step 8 - Cleanup
 
 Clean up is applicable if the user deployed to nctl.
 

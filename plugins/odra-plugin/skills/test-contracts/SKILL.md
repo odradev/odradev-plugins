@@ -42,6 +42,10 @@ cargo odra test -- flipping                       # run tests matching "flipping
 cargo odra test -b casper -s -- --nocapture       # show stdout, e.g. self.env().debug(..) output
 ```
 
+Give these commands a long timeout (10 minutes): on a cold cache `cargo odra test -b casper`,
+`cargo odra build` and `cargo odra schema` compile the Casper execution engine and can take several
+minutes each; later runs take seconds.
+
 If tests fail, help the user fix the issues. Explain any errors in context.
 
 ## Things worth knowing (Odra 2.10)

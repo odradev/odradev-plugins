@@ -519,11 +519,36 @@ to nothing. Build production wasm without `test-support`.
 
 ## Upgrades
 
-A contract deployed upgradable (`InstallConfig::upgradable`, the default of `load_or_deploy`) can be
-replaced by a new version that implements `upgrade(&mut self, ...)`; its parameters become
-`<Name>UpgradeArgs`. Entry points follow the new code; storage stays where it is and `upgrade` is
-the place to migrate it (`init` is not called again). `upgrade` cannot be `payable`. In tests:
-`NewVersion::try_upgrade(&env, address, args)`; on livenet: odra-cli's `upgrade` command.
+Only a contract installed **upgradable** can be upgraded. `Contract::deploy`/`try_deploy` in tests
+and odra-cli's `load_or_deploy` install a *locked* package, which Casper refuses to upgrade for good
+(`A locked contract cannot be upgraded`); the only way forward is a redeploy under a new address.
+Decide at the first deploy:
+
+```rust
+// tests
+let c = Counter::deploy_with_cfg(&env, args, InstallConfig::upgradable::<Counter>());
+// deploy script (odra-cli)
+let c = Counter::load_or_deploy_with_cfg(env, None, args, InstallConfig::upgradable::<Counter>(), container, gas)?;
+```
+
+OdraVM does not model the lock: a test that upgrades a plainly deployed contract passes on OdraVM and
+fails on CasperVM and livenet.
+
+The new version implements `upgrade(&mut self, ...)`; its parameters become `<Name>UpgradeArgs` and
+the flags of odra-cli's `upgrade` command. What an upgrade does:
+
+- **Entry points follow the new code.** Anything the old version had and the new one lacks is gone.
+- **Storage stays where it is.** Fields are addressed by their position in the struct, so **append**
+  new fields after the existing ones and never reorder or remove them. `upgrade` is the place to
+  initialise what is new — e.g. bootstrap an `Ownable` submodule with the caller, which is the
+  account holding the upgrade rights — and to migrate data. `init` is *not* called again; keep its
+  signature compatible, as fresh deploys and `load_or_deploy` still use it.
+- `upgrade` cannot be `payable` or `non_reentrant`.
+
+Host side: `NewVersion::try_upgrade(&env, address, NewVersionUpgradeArgs { .. })` returns
+`OdraResult<NewVersionHostRef>` (there is no host-side `upgrade`: `Contract::upgrade(..)` is your
+entry point). On livenet: odra-cli's `upgrade <Name> --<arg> <value> --gas ..`. See `testing.md` for
+a test and `dapp.md` for a complete retrofit of deployed contracts.
 
 ## SubModules
 

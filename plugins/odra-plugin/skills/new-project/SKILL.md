@@ -124,7 +124,12 @@ Point out what was generated and what each piece is for (the `full` template; `b
 - `bin/build_contract.rs`, `bin/build_schema.rs` — generated tooling; do not edit (except to add
   `use <dependency>;` when building a contract from a dependency crate — the comment inside says so).
 - `bin/cli.rs` — your deploy script and scenarios; this one *is* meant to be edited. It builds the
-  `<project>_cli` binary: `cargo run --bin my_project_cli -- deploy`.
+  `<project>_cli` binary: `cargo run --bin my_project_cli -- deploy`. **The template deploys with
+  `load_or_deploy`, which installs a locked package that can never be upgraded.** If the contracts
+  may ever need an upgrade, switch it to
+  `load_or_deploy_with_cfg(env, None, args, InstallConfig::upgradable::<Contract>(), container, gas)`
+  before the first deployment that matters (`smart-contract-writer` does this when it edits the
+  script).
 - `.env.sample` — livenet configuration for the CLI, preset for a local NCTL node. Copy it to
   `.env` (or `<name>.env`, selected with `ODRA_CASPER_LIVENET_ENV=<name>`) and fill in the key path.
   `.gitignore` already ignores `.env`, `*.env` and `secret_key*.pem`.
