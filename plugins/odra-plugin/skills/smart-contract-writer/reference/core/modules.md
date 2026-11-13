@@ -156,9 +156,18 @@ without a wrapper, with cargo-odra 0.2.0:
 fqn = "odra_modules::erc20::Erc20"
 ```
 
-Add `use odra_modules;` to `bin/build_contract.rs` and `bin/build_schema.rs` (next to the existing
-`use` line; the comment there explains why). `cargo odra build -c Erc20` then writes `wasm/Erc20.wasm`
-and the schema next to your own contracts.
+The dependency has to be linked into both build binaries, or the wasm has no entry points:
+
+- **Odra 2.11+:** `bin/build_contract.rs` and `bin/build_schema.rs` of a generated project contain
+  `odra::link_contract_crates!();`, which links every dependency `Odra.toml` lists a contract of.
+  Nothing to edit. Add that line to a project generated for an older Odra. An optional or
+  `[target.*]` dependency still needs its own `use`.
+- **Odra 2.10:** add `use odra_modules;` to both files, next to the existing `use` line.
+
+`cargo odra build -c Erc20` then writes `wasm/Erc20.wasm` and the schema next to your own contracts.
+With cargo-odra 0.2.1 the build fails with an error naming the crate if it was not linked; 0.2.0
+only searches the sources for the crate's name, so a mention in a comment passes and the wasm is
+saved without entry points.
 
 ## Testing modules
 

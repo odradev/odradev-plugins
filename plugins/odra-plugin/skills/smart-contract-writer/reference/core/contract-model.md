@@ -514,7 +514,7 @@ pub fn burn_for_origin(&mut self, amount: U256) {
 
 `self.env().debug(format!("transfer of {amount}"))` prints on the host running the contract.
 OdraVM always prints; CasperVM only when the contract crate enables the `test-support` feature of
-`odra` (then run `cargo odra test -b casper -- --nocapture`); without the feature the call compiles
+`odra` (then run `cargo odra test -b casper -- --nocapture`; cargo-odra 0.2.1+, see the test-contracts skill for 0.2.0); without the feature the call compiles
 to nothing. Build production wasm without `test-support`.
 
 ## Upgrades

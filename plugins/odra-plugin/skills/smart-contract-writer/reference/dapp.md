@@ -295,7 +295,8 @@ on OdraVM and CasperVM alike.
    ```
 3. **Build the registry from `odra-modules`.** `odra-modules` in `Cargo.toml`,
    `fqn = "odra_modules::dapp::OwnedDappRegistry"` in `Odra.toml`, and `use odra_modules;` in both
-   `bin/build_contract.rs` and `bin/build_schema.rs`. Deploy it from the deploy script
+   `bin/build_contract.rs` and `bin/build_schema.rs` (not needed from Odra 2.11 if they contain
+   `odra::link_contract_crates!();`). Deploy it from the deploy script
    (`OwnedDappRegistry::load_or_deploy_with_cfg(env, None, NoArgs, InstallConfig::upgradable::<OwnedDappRegistry>(), container, cspr!(350))`)
    and register it in the CLI (`.contract::<OwnedDappRegistry>()`, named `OwnedDappRegistry`).
 4. **Registration scenario.** `add_dapp_contract` can only be called after each member runs the new

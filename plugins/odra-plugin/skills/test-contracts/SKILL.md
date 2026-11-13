@@ -38,11 +38,20 @@ CasperVM runs require the `wasm32-unknown-unknown` target plus `wasm-opt` and `w
 `PATH`; OdraVM requires none of them. If `-b casper` fails on tooling rather than on a test
 assertion, run `/odra-plugin:check-env` before touching the contract.
 
-Arguments after `--` go to `cargo test`, so a single test or printed output work as usual:
+Arguments after `--` go to the test binary, as after `cargo test --`:
 
 ```bash
 cargo odra test -- flipping                       # run tests matching "flipping"
 cargo odra test -b casper -s -- --nocapture       # show stdout, e.g. self.env().debug(..) output
+cargo odra test -- --release -- --nocapture       # cargo's own arguments go before a second `--`
+```
+
+Only the name filter works with cargo-odra 0.2.0; the other two lines need 0.2.1 (`cargo odra
+--version`). On 0.2.0 `-- --nocapture` fails with "unexpected argument"; run cargo directly instead:
+
+```bash
+cargo test -- --nocapture                         # OdraVM
+ODRA_BACKEND=casper cargo test -- --nocapture     # CasperVM, after `cargo odra build`
 ```
 
 Give these commands a long timeout (10 minutes): on a cold cache `cargo odra test -b casper`,

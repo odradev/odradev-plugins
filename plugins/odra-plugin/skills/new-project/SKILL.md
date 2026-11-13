@@ -121,8 +121,9 @@ Point out what was generated and what each piece is for (the `full` template; `b
   struct (`<module>::<Struct>`, or `<crate>::<module>::<Struct>` in a workspace; since 2.10 the
   first segment may also be a dependency crate, e.g. `odra_modules::erc20::Erc20`). A contract
   missing from here still passes OdraVM tests but never produces a wasm file.
-- `bin/build_contract.rs`, `bin/build_schema.rs` — generated tooling; do not edit (except to add
-  `use <dependency>;` when building a contract from a dependency crate — the comment inside says so).
+- `bin/build_contract.rs`, `bin/build_schema.rs` — generated tooling; do not edit. One exception on
+  Odra 2.10: add `use <dependency>;` when building a contract from a dependency crate (the comment
+  inside says so). From 2.11 the `odra::link_contract_crates!();` line there does it.
 - `bin/cli.rs` — your deploy script and scenarios; this one *is* meant to be edited. It builds the
   `<project>_cli` binary: `cargo run --bin my_project_cli -- deploy`. **The template deploys with
   `load_or_deploy`, which installs a locked package that can never be upgraded.** If the contracts

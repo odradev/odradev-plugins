@@ -238,7 +238,7 @@ assert_eq!(err, MyError::Unauthorized.into());
 `self.env().debug(message)` prints on the host. OdraVM always prints; CasperVM only when the
 contract crate enables the `test-support` feature of `odra`
 (`odra = { version = "2.10.0", features = ["test-support"] }`); run with
-`cargo odra test -b casper -- --nocapture`. Production wasm is built without the feature. A raw
+`cargo odra test -b casper -- --nocapture` (cargo-odra 0.2.1+; on 0.2.0 `ODRA_BACKEND=casper cargo test -- --nocapture`). Production wasm is built without the feature. A raw
 `panic!`/`unwrap` in contract code prints the standard Rust message too (since 2.10 OdraVM no longer
 swallows it) and comes back as `VmError::Panic`.
 
