@@ -30,8 +30,9 @@ obvious sense.
 - **`fqn` is a Rust path, not a package path.** Single-crate: `fqn = "flipper::Flipper"`
   (`<module>::<Struct>`). Workspace: `fqn = "flipper::flipper::Flipper"` (`<crate>::<module>::<Struct>`).
   Since 2.10 the first segment may be a dependency crate (`fqn = "odra_modules::erc20::Erc20"`,
-  needs cargo-odra 0.2.0 and a `use odra_modules;` in `bin/build_contract.rs` and
-  `bin/build_schema.rs`, as the comment there says).
+  needs cargo-odra 0.2.0). The crate must be linked into `bin/build_contract.rs` and
+  `bin/build_schema.rs`: on 2.10 with a `use odra_modules;` in both, as the comment there says; from
+  2.11 the `odra::link_contract_crates!();` line of a generated project does it.
 - **The wasm file is named after the struct, case included** — `Flipper.wasm`, not `flipper.wasm`.
 - **`cargo odra build` has no `-b`/`--backend` flag.** Only `cargo odra test` does. `-c` selects
   contracts and takes **space**-separated names: `cargo odra build -c Foo Bar`.
