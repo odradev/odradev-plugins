@@ -42,7 +42,9 @@ Otherwise ask with `AskUserQuestion`:
   It prints the public key and never overwrites an existing file. Use `keys/mainnet_secret_key.pem`
   for mainnet: **one key per network** — a testnet key gets pasted into chats and scripts, a mainnet
   key holds money.
-- **Use a key file the user already has** — take the path, verify it exists, print its public key:
+- **Use a key file the user already has** — take the path, verify it exists, copy it to
+  `keys/<network>_secret_key.pem` (mode 600) so the project's paths are the ones every skill uses,
+  and print its public key:
   ```bash
   ${CLAUDE_SKILL_DIR}/scripts/public-key.sh <path>
   ```

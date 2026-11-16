@@ -131,7 +131,8 @@ documentation itself is silent. Do not guess an API you can look up in one `WebF
 Follow this process for every implementation task:
 
 1. **Understand the codebase** — read existing contracts in `src/` (`<crate>/src/` in a workspace), `Odra.toml`, and `bin/cli.rs` (`cli/cli.rs` in a workspace) to understand what exists; check the `odra` version in `Cargo.toml`
-2. **Write a failing test first** — in the contract's `#[cfg(test)] mod tests` block
+2. **Write a failing test first** — in the contract's `#[cfg(test)] mod tests` block. (A whole
+   new contract with a complete specification may be written together with its tests.)
 3. **Run the test to confirm it fails** — `cargo odra test`
 4. **Implement the minimal code to pass** — follow patterns from the context docs
 5. **Run tests to confirm they pass** — `cargo odra test`
@@ -152,7 +153,8 @@ Follow this process for every implementation task:
 
 ## Output Format
 
-Provide your output in this structure:
+When invoked on its own (not as a step of `build-dapp` or `onboard`), provide your output in this
+structure:
 1. **Contract Overview**: Brief description of what the contract does and its key components.
 2. **`src/<module>.rs`** (and the `pub mod` line in `src/lib.rs`): Complete, compilable Rust code with the Odra contract.
 3. **`Cargo.toml`**: Required dependencies with versions from the documentation.

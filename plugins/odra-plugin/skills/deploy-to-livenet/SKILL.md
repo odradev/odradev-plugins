@@ -121,6 +121,26 @@ ${CLAUDE_SKILL_DIR}/scripts/deploy.sh nctl contract Flipper get
 ${CLAUDE_SKILL_DIR}/scripts/deploy.sh nctl scenario flip --number 3
 ```
 
+Environment variables of the calling shell reach the deploy script, so a script that reads its
+constructor arguments with `std::env::var` is parameterised on the command line (record the values
+used — nothing else does):
+
+```bash
+ROUND_DURATION_MS=300000 ${CLAUDE_SKILL_DIR}/scripts/deploy.sh testnet
+```
+
+What a transaction cost — the CLI prints its hash and explorer link, not the cost:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/tx-cost.sh testnet <transaction hash or explorer link>
+# limit 450.000 CSPR, consumed 386.902 CSPR, refund 47.323 CSPR, charged 402.677 CSPR
+```
+
+The charge is the consumed gas plus a quarter of the unused part of the limit. Before the first
+install on a network where CSPR matters, measure the consumption on the Casper VM (a test printing
+`env.gas_report()`, run with `ODRA_BACKEND=casper cargo test <name> -- --nocapture`) and set the
+limit in the deploy script to that plus 15–20%; the template's default limit is a guess.
+
 **Important:**
 - Deployments can take 30-90 seconds per contract
 - Use a generous timeout (10 minutes)

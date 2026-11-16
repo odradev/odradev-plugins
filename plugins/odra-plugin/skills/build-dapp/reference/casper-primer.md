@@ -38,9 +38,12 @@ whole file — explain a concept at the moment the user meets it.
 - **Upgradable or locked** — decided at the first deploy. An upgradable contract can get new code
   from the account that installed it (so its users trust that account); a locked one can never
   change, bugs included.
-- **Gas** — the fee for a transaction, paid in CSPR by the sender. You state a ceiling; most of
-  what is not used comes back. Storing data is the expensive part, which is why installing a
-  contract costs far more than calling it.
+- **Gas** — the fee for a transaction, paid in CSPR by the sender. You state a ceiling (the
+  *payment limit*); 75% of what the transaction did not use comes back, the rest is the fee:
+  `charged = used + 25% of (limit − used)`. With a limit of 12 CSPR and 4 used, the charge is 6.
+  Too low a limit fails the transaction (and still costs); a much too high one wastes a quarter of
+  the excess. Storing data is the expensive part, which is why installing a contract (hundreds of
+  CSPR) costs far more than calling it (a few CSPR).
 - **Events** — messages a contract emits when something happens (a bid, a transfer). Apps and
   explorers show history from them.
 - **Odra** — the Rust framework the contracts are written in. It also gives the tests, the command

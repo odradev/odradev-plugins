@@ -58,6 +58,23 @@ impl DeployScript for ContractsDeployScript {
 }
 ```
 
+### Constructor arguments from the environment
+
+Values that differ between a test deployment and the real one (durations, prices) are read from
+environment variables with the production value as the default. Variables of the shell that runs
+the CLI are visible (`ROUND_DURATION_MS=300000 cargo run --bin my_project_cli -- deploy`):
+
+```rust
+fn env_or<T: std::str::FromStr>(name: &str, default: T) -> T {
+    std::env::var(name).ok().and_then(|v| v.parse().ok()).unwrap_or(default)
+}
+
+// in `deploy`:
+let round_duration = env_or("ROUND_DURATION_MS", 24 * 60 * 60 * 1000u64);
+```
+
+Log the values the script used (`odra_cli::log(format!(..))`): nothing else records them.
+
 ## cspr! Macro
 
 `cspr!(amount)` converts CSPR to motes. With a literal it is a constant expression

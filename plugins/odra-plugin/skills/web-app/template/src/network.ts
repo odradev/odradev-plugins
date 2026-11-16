@@ -52,3 +52,8 @@ export const transactionUrl = (hash: string) => `${NETWORK.explorerUrl}/transact
 export const accountUrl = (publicKey: string) => `${NETWORK.explorerUrl}/account/${publicKey}`;
 export const contractUrl = (packageHash: string) =>
   `${NETWORK.explorerUrl}/contract-package/${packageHash.replace(/^hash-/, "")}`;
+/** Explorer page of an `Address` value read from a contract (`address.value`). */
+export const addressUrl = (address: string) =>
+  address.startsWith("hash-") || address.startsWith("contract-package-")
+    ? contractUrl(address.replace(/^contract-package-/, "hash-"))
+    : `${NETWORK.explorerUrl}/account/${address.replace(/^(entity-account-|account-hash-)/, "")}`;

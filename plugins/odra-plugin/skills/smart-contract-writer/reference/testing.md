@@ -108,6 +108,26 @@ let env = odra_test::env();
 | `env.gas_report()` / `env.last_call_gas_cost()` | Gas used, on every backend |
 | `env.get_named_value(&addr, "name")`, `get_dictionary_value(..)`, `get_storage_value(..)` | Raw storage reads (2.10) |
 
+### What will it cost? A `gas_costs` test
+
+On the Casper VM the gas report is within a fraction of a percent of what a live network charges
+for the same calls, the install included — measure before deploying:
+
+```rust
+/// `cargo odra build && ODRA_BACKEND=casper cargo test gas_costs -- --nocapture`
+#[test]
+fn gas_costs() {
+    let (env, mut contract) = setup();          // deploys: the install is in the report
+    env.set_caller(env.get_account(1));
+    contract.with_tokens(U512::from(10_000_000_000u64)).bid();
+    env.advance_block_time(Duration::from_millis(DAY));
+    contract.settle();
+    println!("{}", env.gas_report());           // amounts in motes: 1 CSPR = 1_000_000_000
+}
+```
+
+On OdraVM the report is empty of meaning — gas is not modelled there.
+
 ## Calling Entry Points
 
 ```rust

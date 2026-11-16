@@ -96,6 +96,13 @@ obvious sense.
   cannot be `payable`/`non_reentrant`, are not on the `ContractRef` (other contracts cannot call
   them) and are not in the wasm. They may call the contract's own functions and non-mutating entry
   points of other contracts.
+- **Bind before you pass to a submodule.** `self.ownable.init(self.env().caller())` and
+  `self.token.raw_mint(to, id, self.metadata_of(id))` fail with E0502 (`cannot borrow *self as
+  immutable because it is also borrowed as mutable`): the submodule call borrows `self` mutably
+  first. Write `let caller = self.env().caller(); self.ownable.init(caller);`.
+- **`Address::is_contract()`** tells a contract from an account — the check for "accounts only".
+  A call from the CLI or a wallet has the account as `caller()`, also when it goes through the
+  proxy caller (payable calls).
 - **`ContractEnv::attached_value()` returns `U512`**, not `U256`.
 - **`self.env()` is a method, not a field.** `self.env.revert(...)` fails with E0615.
 - **`#[odra::external_contract]` keeps the trait** (2.10). A second hand-written copy of the trait,

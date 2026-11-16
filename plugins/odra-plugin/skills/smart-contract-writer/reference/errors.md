@@ -24,6 +24,22 @@ collisions in the final WASM binary.
 pub struct OwnedContract { ... }
 ```
 
+## Codes already taken by `odra-modules`
+
+The codes of all errors of a contract — its own and those of every module it embeds — must differ
+(a clash fails `cargo odra schema` / `build` since 2.11, and is ambiguous before). Number your own
+errors from 1 and stay below 20,000.
+
+| Module | Codes |
+| --- | --- |
+| `access` (`Ownable`, `AccessControl`) | 20000–20004 |
+| `security` (`Pauseable`) | 21000–21001 |
+| `dapp` | 22000–22006 |
+| `erc20`, `erc721`, `erc1155` | 30000–30005, 31000–31002, 35000 |
+| `cep2612`, `cep3009` | 36000–36002, 37000–37007 |
+| `cep95` | 40000–40006 |
+| `cep18` | 60001–60003 (the older `cep18_token`: 99 and 100) |
+
 ## Reverting with an Error
 
 Use `self.env().revert(error)` — it never returns (the transaction is rolled back):

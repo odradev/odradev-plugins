@@ -84,7 +84,7 @@ The `odra-modules` crate ships ready-to-use modules. Embed them via
 
 | Module | Description |
 |---|---|
-| `Ownable` | Single-owner access control: `get_owner()`, `transfer_ownership()`, `renounce_ownership()`, and `assert_owner(&addr)` as the guard. `unchecked_transfer_ownership` is a plain method. |
+| `Ownable` | Single-owner access control: `init(owner: Address)` (call it from the contract's `init`), `get_owner() -> Address` (reverts when there is none), `get_optional_owner()`, `transfer_ownership(&Address)`, `renounce_ownership()`, and `assert_owner(&Address)` as the guard. `unchecked_transfer_ownership` is a plain method. Do not delegate `renounce_ownership` in a contract that pays or asks its owner. |
 | `Ownable2Step` | Two-step ownership transfer. |
 | `AccessControl` | Role-based access control: `has_role`, `grant_role`, `revoke_role`, `check_role(&role, &addr)` as the guard. Bootstrap the first admin with `unchecked_grant_role(&DEFAULT_ADMIN_ROLE, ..)` in `init`. |
 

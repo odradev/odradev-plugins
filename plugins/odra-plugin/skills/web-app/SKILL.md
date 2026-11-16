@@ -46,7 +46,9 @@ events, the error enums (`<Contract>Errors`) and the number types (`U256`, `U512
 **Read `<project>_client/pkg-web/<project>_wasm_client.d.ts` before writing any page code** — it is
 the exact API, and it is generated, so never guess a method name.
 
-Run it again after every change to an entry point, event or error.
+Run it again after every change to an entry point, event or error. It regenerates the contract
+schemas itself (no separate `cargo odra schema`), and keeps the client crate's `target/` out of
+git. Commit `<project>_client/` without `pkg-web/` and `target/`: both are build output.
 
 ### The reader key
 
@@ -99,12 +101,14 @@ In `main.ts`:
 - **Reads** go in `refresh()`: call `prepareRead()` once, then `await contract.<getter>()`. Getters
   return typed values — `U512`/`U256` objects (not numbers), `Address | undefined` for an `Option`,
   `bigint` for `u64`. An `Address` is shown with `.value` (`address.toString()` is JSON); build one
-  from the connected account with `account.address`, numbers with `U256.fromBigInt(1n)`.
+  from the connected account with `account.address`, numbers with `U256.fromBigInt(1n)`. An
+  address reads `entity-account-<hex>` or `hash-<hex>`; link it with `addressUrl()` from
+  `network.ts`, and compare it with `currentAccount()?.address.value` to mark "you".
 - **Lookups go through `readOr`**: `await readOr(undefined, () => contract.ownerOf(id))`,
   `await readOr(U256.zero(), () => contract.balanceOf(address))`. A getter that looks something up
   reverts when it is not there, and — with odra-wasm-client up to 2.10.1 — a getter reading a
   mapping nobody has written to yet (balances before the first transfer, owners before the first
-  mint) crashes inside the client and **never answers**: the page hangs with only
+  mint) can crash inside the client and **never answer**: the page hangs with only
   `RuntimeError: unreachable` in the console. `readOr` turns both into the fallback value. (The crash is fixed in Odra after 2.10.1; `readOr`
   stays useful for the reverts.)
 - Reads are slow (about a second each, one network round trip per getter). Read what the page
@@ -115,11 +119,10 @@ In `main.ts`:
 - A **payable** entry point takes the attached CSPR as an extra last argument:
   `contract.bid(amount)` with `amount: U512` in motes. Build it with `parseCspr(input.value)` —
   never multiply a float.
-- **Gas** is a ceiling in CSPR, not the price; three quarters of the unused part is refunded. Run
-  the call once from the CLI on testnet and look up its **Charge** on `testnet.cspr.live` (the CLI
-  prints the transaction link, not the cost); use about twice what it consumed. A payable call
-  through the wallet consumed 6–7 CSPR in a simple auction, so 15 is a sane first limit. Too little
-  fails with `Out of gas`.
+- **Gas** is a ceiling in CSPR, not the price; three quarters of the unused part is refunded. Take
+  what the call consumed on testnet (`tx-cost.sh testnet <hash>` from `deploy-to-livenet`, or the
+  `gas_costs` test) and use about twice that: calls of one entry point vary with the state they
+  meet. Simple calls consume 3–7 CSPR. Too little fails with `Out of gas`.
 - **Errors**: map `result.errorCode` against the generated `<Contract>Errors` enum in
   `describeError()` so the user reads a sentence, not a number.
 - **Amounts**: 1 CSPR = 1,000,000,000 motes. Show CSPR (`formatCspr`), send motes.
@@ -141,8 +144,29 @@ cd web && npm run build      # type-checks against the generated client, then bu
 npm run dev                  # http://localhost:5173
 ```
 
-`npm run build` must pass before you say the app works. Then check in a browser, in this order,
-and report each honestly:
+`npm run build` must pass before you say the app works. `npm install` may warn that esbuild's
+install script is not approved; the build works regardless.
+
+Then prove the reads without a browser — the same client, key, proxies and address the page uses:
+
+```bash
+node ${CLAUDE_SKILL_DIR}/scripts/check-reads.mjs <MainContract> <getter> [<getter> ...]
+# DailyAuction hash-8526… on casper-test
+#   currentRound: 2n
+#   minBid: 1000000000
+```
+
+(camelCase names of getters without arguments.) Run it from the project root, after the reader
+account is funded.
+
+Running the dev server from an agent: it does not return, so start it in the background and keep
+its PID (`npm run dev > /tmp/web-dev.log 2>&1 & echo $!`), and stop it with `kill <PID>` — a
+`pkill -f` pattern also matches the shell running it. The port is fixed at 5173; if it is taken,
+`npm run dev -- --port 5180` (the development CSPR.click id works on any localhost port). When
+checking with `curl`, look at content, not the status code: fetch `contracts.casper-test.json` and
+see your contract's name — another project's server answers 200 as well.
+
+Then check in a browser, in this order, and report each honestly:
 
 1. The page loads and shows contract state **without a wallet** — this proves the addresses, the
    reader key and the reads.
@@ -152,7 +176,8 @@ and report each honestly:
    the state on the page changes.
 
 Steps 2 and 3 need the user's wallet: you cannot approve a transaction for them. If you cannot
-drive a browser at all, say that the page builds and what you could not check.
+drive a browser at all, say that the page builds and `check-reads.mjs` passes, and that rendering
+and the wallet flow are unchecked.
 
 When a read fails, open the browser console; the usual causes:
 

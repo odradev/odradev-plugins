@@ -31,6 +31,11 @@ for ENV_FILE in *.env; do
   fi
 done
 
+# The client crate is built on its own; keep its build output out of git.
+if [ -f .gitignore ] && ! grep -q "_client/target" .gitignore; then
+  printf '\n# generated contract client: build output\n/*_client/target\n/*_client/pkg-web\n' >> .gitignore
+fi
+
 # The key reaches the build through a cargo directive that ends at the first newline, so it is
 # passed as a one-line PEM (which the client parses fine).
 WASM_CLIENT_SK="$(tr -d '\r\n' < "$READER_KEY")" cargo odra generate-client

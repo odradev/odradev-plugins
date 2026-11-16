@@ -4,14 +4,16 @@ description: >
   Validate the development environment for Odra smart contract development.
   Use when the user says "check env", "check setup", "check prerequisites",
   "verify environment", or "check-env".
-allowed-tools: Bash(rustc *),Bash(rustup *),Bash(cargo odra *),Bash(wasm-opt *),Bash(wasm-strip *),Bash(docker *),Bash(cc *),Bash(pkg-config *),Bash(command -v *),Bash(cat *),Bash(uname *),Read,WebFetch
+allowed-tools: Bash(rustc *),Bash(rustup *),Bash(cargo odra *),Bash(wasm-opt *),Bash(wasm-strip *),Bash(docker *),Bash(cc *),Bash(pkg-config *),Bash(command -v *),Bash(node *),Bash(wasm-pack *),Bash(cat *),Bash(uname *),Read,WebFetch
 ---
 
 # Check Development Environment
 
 Validates that all prerequisites for Odra development are installed.
 
-**Run the checks from inside the project directory** when there is one. Two of them —
+**Run the checks from inside the project directory** when there is one. Before a project exists,
+run everything once, and repeat only the Rust toolchain and wasm target checks from inside the
+project after it is scaffolded. Two of them —
 the Rust toolchain and the wasm target — resolve differently depending on the working
 directory, and checking from the wrong place reports a healthy environment that cannot build.
 
@@ -196,6 +198,17 @@ If missing:
 - Debian/Ubuntu: `sudo apt install wabt`
 - Fedora: `sudo dnf install wabt`
 - macOS: `brew install wabt`
+
+### Node.js and wasm-pack (optional — the web app)
+
+```bash
+node --version
+wasm-pack --version
+```
+
+Needed only for a web front end (`/odra-plugin:web-app`, `cargo odra generate-client`): Node.js
+20.19 or newer, and any `wasm-pack`. If missing: Node from <https://nodejs.org> or the system
+package manager; `cargo install wasm-pack`.
 
 ### Docker (optional)
 

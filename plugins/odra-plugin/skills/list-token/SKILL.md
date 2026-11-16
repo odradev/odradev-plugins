@@ -121,7 +121,10 @@ Nothing more to deploy: explorers index CEP-95 contracts by themselves.
 3. Metadata is what makes an NFT look like something: the `name`, `description` and `image` (a
    public https or ipfs URL) keys of the token metadata. A token without an `image` shows as a
    blank card. If the project's NFTs have no image yet, say so and offer to add one.
-4. An NFT **marketplace** listing is not something to promise: CSPR.market documents support for
+4. Without a browser, verify with the CLI instead and say the explorer view is unchecked:
+   `deploy.sh testnet contract <Contract> owner_of --token_id <id>`, `... token_metadata --token_id
+   <id>`, and `deploy.sh testnet print-events <Contract>` for the `Mint` event.
+5. An NFT **marketplace** listing is not something to promise: CSPR.market documents support for
    the older CEP-78 and CEP-47 standards, and CEP-95 support was announced as in progress. Check
    <https://testnet.cspr.market> for the collection and report what you actually see.
 

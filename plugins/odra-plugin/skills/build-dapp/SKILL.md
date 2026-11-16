@@ -56,9 +56,14 @@ round of questions). Cover:
 
 - **Who does what** — the roles (owner, bidder, buyer, member...) and the actions of each.
 - **What is owned** — a fungible token (CEP-18), NFTs (CEP-95), CSPR held by the contract.
+- **If there are NFTs: what each one is** — its name, and where its picture comes from. An NFT
+  without an `image` in its metadata shows as a blank card in wallets and explorers. If the user
+  has no artwork yet, build so the owner can set an image address later, and say so.
 - **Money flows** — who pays, who receives, when, and what happens to the money of people who do
   not win / cancel / are late. Every CSPR that enters a contract needs a way out.
-- **Time** — deadlines, rounds, what happens when nobody acts.
+- **Time** — deadlines, rounds, what happens when nobody acts. For anything recurring ("a new
+  auction every day"): does the next round start on a fixed schedule or when the previous one is
+  closed, and what happens to a round nobody took part in.
 - **Rules for the owner** — what the creator may change later, and what nobody may.
 
 Then translate, for yourself, into a design. Guidance that prevents the usual wrong turns:
@@ -66,7 +71,8 @@ Then translate, for yourself, into a design. Guidance that prevents the usual wr
 - **Nothing happens by itself on a blockchain.** There are no timers: "the auction ends after 24
   hours" means the *next transaction after* the deadline settles it. Design every time-based rule
   as "anyone may call `settle` once the time is up, and every other action settles first". Tell the
-  user this in plain words — it is the most surprising property for newcomers.
+  user this in plain words — it is the most surprising property for newcomers. One consequence to
+  handle on the page: an action sent just after a deadline belongs to the *next* round.
 - **Prefer one contract** unless there is a reason to split (an independent token others must hold,
   many instances from a factory). One contract means one deployment, one address, one client.
 - **Use the standards.** A token is `Cep18`, an NFT collection is `Cep95` from `odra-modules`,
@@ -74,15 +80,29 @@ Then translate, for yourself, into a design. Guidance that prevents the usual wr
 - **Make durations and prices constructor arguments.** A 24-hour auction cannot be tried out in an
   afternoon; deploy to testnet with 10-minute rounds and to mainnet with the real value.
 - **Pay people back in the same transaction** where possible (the outbid bidder is refunded when
-  the higher bid arrives) so that nobody has to come back and claim.
+  the higher bid arrives) so that nobody has to come back and claim. Such a refund is a transfer
+  to whoever paid in: if that could be a contract unable to receive CSPR, its refund would fail and
+  block everyone after it. Either accept payments from accounts only (revert when
+  `self.env().caller().is_contract()`), or let people claim refunds themselves. A call from the
+  CLI or a wallet, also a payable one "through proxy", has the account as its caller.
+- **Keep amounts that move at 2.5 CSPR or more** (minimum bid, price, refund): it is the smallest
+  transfer between accounts on Casper, and smaller payouts are not worth finding the edge of.
+- **Do not expose `renounce_ownership`** in a contract that pays its owner: without an owner the
+  payout reverts and the funds are stuck.
 - **Deploy upgradable** unless the user wants immutability; say which you chose and what it means.
 
 ## Phase 2 — Environment and project
 
-1. `/odra-plugin:check-env` — install what is missing before going on. The web app also needs
-   Node.js 20.19+ and `wasm-pack`; Docker is not needed for this flow.
+1. `/odra-plugin:check-env` — install what is missing before going on, including its optional
+   Node.js and `wasm-pack` rows (the web app needs them); Docker is not needed for this flow.
 2. `/odra-plugin:new-project` — template by what is owned: `cep95` for NFTs, `cep18` for a
    fungible token, `full` otherwise. Name the project after the product, in `snake_case`.
+3. Repeat check-env's Rust toolchain and wasm target checks from inside the new project: it pins
+   its own toolchain.
+4. `git add -A && git commit` the scaffold. Commit again after each phase that leaves the project
+   working (tests green, deployed, web app building) — `go-mainnet` later requires a clean tree,
+   and the user gets a history of how the app came to be. `resources/<chain>-contracts.toml` is
+   committed; `keys/`, `*.env`, `target/` and `node_modules/` never are.
 
 Explain while the first build runs: what a smart contract is, and that the project has three parts —
 contracts (`src/`), a command line tool that deploys and calls them (`bin/cli.rs`), and soon a web
@@ -91,7 +111,12 @@ page (`web/`).
 ## Phase 3 — Contracts and tests
 
 Invoke `smart-contract-writer` with the specification from Phase 1 (it will not need to ask again).
-Requirements to pass on:
+In this flow you run the commands yourself (`cargo odra test`, `cargo odra schema`) instead of
+asking the user, you may write a new contract together with its tests rather than test-first, and
+its "Output Format" section does not apply — the code goes into the project, the explanation to
+the user comes in plain words. Read its core references and `gotchas.md` once, plus `cep95.md`
+or `cep18.md` for the token, `events.md`, `errors.md` and `testing.md`; nothing else is needed for
+a typical contract. Requirements to pass on:
 
 - a test for every rule in the specification, including the unhappy paths (too low, too late, not
   allowed) and **the money**: assert balances before and after, and that the contract holds zero
@@ -100,9 +125,12 @@ Requirements to pass on:
 - read-only entry points for everything the page will show (current state, deadlines, prices,
   owners) — the web app can only display what a getter returns;
 - an event for every state change;
-- the template's sample contract removed, `Odra.toml` and the deploy script in `bin/cli.rs`
-  updated, deployment upgradable, constructor arguments for durations and prices readable from
-  environment variables with production defaults;
+- the template's sample contract (`src/token.rs` / `src/flipper.rs`) deleted and replaced by the
+  product's own module — do not build on top of `MyToken`; `Odra.toml`, `src/lib.rs` and the
+  deploy script in `bin/cli.rs` updated; deployment upgradable; constructor arguments for durations
+  and prices read from environment variables with production defaults (pattern in `cli.md`);
+- a `gas_costs` test that runs one of each transaction and prints `env.gas_report()` (see
+  `testing.md`);
 - no unguarded `mint`/`burn` left over from a template.
 
 Then `/odra-plugin:test-contracts` on **both** backends (`cargo odra test`, then
@@ -115,11 +143,18 @@ evidence that the contract does what they asked.
 
 1. `/odra-plugin:setup-account` for testnet. The faucet is the user's step: explain accounts, keys
    and test CSPR while they do it, then verify the balance yourself.
-2. `/odra-plugin:deploy-to-livenet` to testnet, with short durations (see Phase 1) so the user can
-   watch a full cycle.
-3. Exercise it from the CLI, as a first proof and to learn the gas each call needs: one happy path
-   through the main actions (`deploy.sh testnet contract <Contract> <entry point> ...`).
-4. Give the user the explorer link of the contract package
+2. **Measure before paying.** Run the `gas_costs` test on the Casper VM
+   (`cargo odra build && ODRA_BACKEND=casper cargo test gas_costs -- --nocapture`): it prints what
+   the install and each call consume, within a fraction of a percent of the real network. Set the
+   install's payment limit in the deploy script to that plus 15–20%. An install that runs out of
+   gas is charged and has to be repeated; a limit far above the need costs a quarter of the excess.
+3. `/odra-plugin:deploy-to-livenet` to testnet, with short durations so the user can watch a full
+   cycle — 5 minutes per round is enough, and every minute is a minute of waiting below.
+4. Exercise it from the CLI, as a first proof: one happy path through the main actions
+   (`deploy.sh testnet contract <Contract> <entry point> ...`), then
+   `tx-cost.sh testnet <hash>` for what each really cost. While a round runs out, go on with
+   Phase 5 and come back to settle it.
+5. Give the user the explorer link of the contract package
    (`https://testnet.cspr.live/contract-package/<hash without "hash-">`) and of one transaction,
    and explain what they are looking at.
 
@@ -133,7 +168,8 @@ moment the whole thing becomes real — do not skip it, and wait for them.
 ## Phase 6 — Make the tokens visible
 
 Only if the project created tokens: `/odra-plugin:list-token`. A fungible token gets a liquidity
-pool on CSPR.trade (testnet); NFTs are checked on the explorer and the wallet. Skip the phase, and
+pool on CSPR.trade (testnet); NFTs are checked on the explorer and the wallet (or, without a
+browser, with the CLI getters). Skip the phase, and
 say so, for a project without tokens.
 
 ## Phase 7 — Hand over

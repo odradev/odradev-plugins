@@ -50,10 +50,9 @@ recommend an independent audit before launch, and a launch with low limits.
 Fees on mainnet and testnet are priced identically (1 mote per unit of gas on both), so **testnet
 measurements are the estimate**. Collect them:
 
-- what each install was charged on testnet — the **Charge** shown for the transaction on
-  `testnet.cspr.live` (the contract package page lists them), or the account balance before and
-  after. The CLI does not print it. From a charge and the limit it was sent with:
-  `consumed = (charge − 0.25 × limit) / 0.75`;
+- what each install consumed on testnet:
+  `${CLAUDE_SKILL_DIR}/../deploy-to-livenet/scripts/tx-cost.sh testnet <hash>` (the hashes are in
+  the deploy output and on the contract package page of `testnet.cspr.live`);
 - the same for one call of each user action (this is what *users* will pay per action).
 
 How the fee works: a transaction states a payment limit; **75% of the unused part is refunded**
