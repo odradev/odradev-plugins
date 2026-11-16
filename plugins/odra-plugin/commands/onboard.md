@@ -140,7 +140,12 @@ Invoke `/odra-plugin:deploy-to-livenet` targeting nctl.
 
 > **You've completed the Odra onboarding.** Here's what you can do next:
 >
+> - `/odra-plugin:build-dapp` — describe an app in plain words and get contracts, a testnet deployment and a web app
+> - `/odra-plugin:setup-account` — create an account and get test CSPR from the faucet
 > - `/odra-plugin:deploy-to-livenet` — deploy to testnet or mainnet, or upgrade a deployed contract
+> - `/odra-plugin:web-app` — a web page for your contracts, with wallet connection
+> - `/odra-plugin:list-token` — make a token tradable on CSPR.trade
+> - `/odra-plugin:go-mainnet` — the checklist and steps for launching for real
 > - `/odra-plugin:setup-nctl` — set up a local node for testing and development
 > - `/odra-plugin:test-contracts` — run tests on OdraVM or/and CasperVM
 > - Instruct me to write code, fix bugs, or add features to your contracts - a specialized agent will handle it.

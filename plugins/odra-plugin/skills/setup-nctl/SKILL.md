@@ -110,6 +110,21 @@ Projects generated from the Odra 2.10 templates already ignore `.env`, `*.env` a
 
 ---
 
+## Step 6b — For a web app: enable speculative execution (optional)
+
+Only when a web page (the `web-app` skill) will read contracts from this node:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/enable-speculative.sh
+```
+
+A plain NCTL node does not serve the `speculative_exec` RPC the generated wasm client reads
+contract state with, and refuses cross-origin requests from a page. The script turns both on for
+node 1 (speculative RPC at `http://localhost:25101`) and restarts it. It has to be run again after
+the container is recreated. Skip it for CLI-only work.
+
+---
+
 ## Step 7 — Report
 
 ```

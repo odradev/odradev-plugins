@@ -171,7 +171,9 @@ obvious sense.
   no `assert_caller` — compare `self.env().caller()` yourself and revert. Its `mint`/`burn` are
   entry points guarded by modalities and badges; `raw_mint`/`raw_burn` are unguarded.
 - **`Cep95` has no `mint`** — the public minting function is `raw_mint(to, token_id, metadata)`, and
-  it is deliberately unguarded. Add your own access control around it.
+  it is deliberately unguarded. Add your own access control around it. **The `cep95` project
+  template ships `mint` and `burn` entry points that anyone can call** (their comments say
+  otherwise): guard or remove them before deploying.
 - **`AccessControl` needs bootstrapping.** Nothing grants the first role, so a standalone deployment
   can never pass its own admin checks. The wrapping contract's `init` must call
   `unchecked_grant_role(&DEFAULT_ADMIN_ROLE, &self.env().caller())`.
@@ -219,6 +221,14 @@ obvious sense.
   `VmError::Other`. Run `cargo odra schema` after changing errors.
 - **`ODRA_CASPER_LIVENET_STATE_ROOT_HASH` (or `--state-root-hash`) refuses transactions** — it is a
   read-only view of the past; unset it to deploy.
+- **An external contract takes transactions only.** A contract known just by its
+  `#[odra::external_contract]` interface (a DEX router, someone else's token) can be called from the
+  CLI with mutating entry points, including payable ones (`router.with_tokens(amount).add_..()`).
+  Calling one of its getters fails with `No contract code registered for contract-package-…`, since
+  livenet getters run local code.
+- **An account that never received CSPR does not exist**: every CLI command panics with
+  `Couldn't get purse uref for address`. Fund it first.
+- **`cspr!(1)` is a `u64`** (motes). For a `U512` init argument write `cspr!(1).into()`.
 - **`ODRA_LOG_LEVEL=debug`** prints the full transaction JSON before it is sent — the fastest way to
   see what was actually signed — and every retried read.
 
