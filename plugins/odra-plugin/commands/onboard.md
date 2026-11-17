@@ -144,6 +144,7 @@ Invoke `/odra-plugin:deploy-to-livenet` targeting nctl.
 > - `/odra-plugin:setup-account` — create an account and get test CSPR from the faucet
 > - `/odra-plugin:deploy-to-livenet` — deploy to testnet or mainnet, or upgrade a deployed contract
 > - `/odra-plugin:web-app` — a web page for your contracts, with wallet connection
+> - `/odra-plugin:publish-web` — put the page online (GitHub Pages), testnet and mainnet
 > - `/odra-plugin:list-token` — make a token tradable on CSPR.trade
 > - `/odra-plugin:go-mainnet` — the checklist and steps for launching for real
 > - `/odra-plugin:setup-nctl` — set up a local node for testing and development

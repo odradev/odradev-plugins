@@ -99,14 +99,11 @@ mainnet`. You never handle the purchase.
    `web/public/contracts.casper.json`.
 2. Fund the reader account on mainnet with a few CSPR (see `web-app`, "The reader key"); ask first,
    it is a mainnet transfer.
-3. **CSPR.click app id.** The development id works on localhost only. The user registers at
-   <https://console.cspr.build>, creates a CSPR.click application for the site's domain and gives
-   you the id. Their account, their step.
-4. Build: `VITE_NETWORK=mainnet VITE_CSPR_CLICK_APP_ID=<id> npm run build` in `web/`.
-5. Hosting: `web/dist/` is a static site; any static host works (GitHub Pages, Netlify, Cloudflare
-   Pages, the user's own server). Publishing is public and theirs to approve — propose a host,
-   then do it only on a yes.
-6. Check the live site like in `web-app` Step 4: state loads without a wallet; the user connects a
+3. `/odra-plugin:publish-web` with `mainnet`: it builds the page for mainnet and publishes it to
+   the root of the project's GitHub Pages site, next to the testnet version under `/testnet/`
+   (which stays, for trying things without real CSPR). It needs the site's CSPR.click app id —
+   already in `GUIDE.md` if the testnet page was published — and the user's yes.
+4. Check the live site as that skill says: state loads without a wallet; the user connects a
    mainnet account and performs one real action with a small amount.
 
 ## Step 6 — Tokens

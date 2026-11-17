@@ -199,17 +199,15 @@ Tell the user how to open it, what a visitor needs (Casper Wallet on Testnet + t
 that the site is plain static files: `npm run build` writes `web/dist/`, which any static host
 serves.
 
-**Before publishing it anywhere but localhost**, two things — do not skip them, the site will
-load and then fail to connect:
+**To put it online use `/odra-plugin:publish-web`** — it publishes the testnet and the mainnet
+version to GitHub Pages. Two things it takes care of, and that a hand-made publish must not skip
+(the site would load and then fail to connect):
 
 - The CSPR.click app id `csprclick-template` works **on localhost only**. The user registers the
-  app at <https://console.cspr.build> (free) and you build with `VITE_CSPR_CLICK_APP_ID=<their id>`.
-  Creating that account is theirs to do.
-- For mainnet build with `VITE_NETWORK=mainnet`, after `/odra-plugin:go-mainnet` deployed the
-  contracts and `sync-contracts.sh` wrote `contracts.casper.json`. Fund the reader account on
-  mainnet too.
-
-Publishing the site (GitHub Pages, Netlify, ...) makes it public: ask before doing it.
+  app at <https://console.cspr.build> (free) and the site is built with
+  `VITE_CSPR_CLICK_APP_ID=<their id>`.
+- The mainnet site is built with `VITE_NETWORK=mainnet`, after `/odra-plugin:go-mainnet` deployed
+  the contracts. Fund the reader account on mainnet too.
 
 ---
 

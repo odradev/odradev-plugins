@@ -119,6 +119,7 @@ plugins/
       setup-nctl/            # Start and configure a local Casper node
       deploy-to-livenet/     # Deploy to nctl, testnet or mainnet
       web-app/               # TypeScript client + Vite app with CSPR.click (template/ and scripts/)
+      publish-web/           # The web app on GitHub Pages: testnet under /testnet/, mainnet at the root
       list-token/            # CSPR.trade pool for a CEP-18 token; NFT visibility
       go-mainnet/            # Readiness review, costs and the mainnet launch
       smart-contract-writer/ # Write and fix contracts (+ reference/: contract model, CLI, testing, factory, dapp, ...)

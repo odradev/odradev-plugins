@@ -18,7 +18,8 @@ blockchains at all. They should end up with:
 
 1. contracts that do what they asked, with tests that prove it;
 2. those contracts running on **Casper testnet**, with explorer links;
-3. a **web app** on their machine where they connect a wallet and use the thing;
+3. a **web app** where they connect a wallet and use the thing — on their machine, and at a
+   public address they can share (the testnet version);
 4. their tokens visible where the ecosystem looks for them;
 5. `GUIDE.md` in the project: what was built, how to use and test it, how to go to mainnet;
 6. an understanding of each of those, built up along the way.
@@ -172,7 +173,14 @@ pool on CSPR.trade (testnet); NFTs are checked on the explorer and the wallet (o
 browser, with the CLI getters). Skip the phase, and
 say so, for a project without tokens.
 
-## Phase 7 — Hand over
+## Phase 7 — Put the testnet app online
+
+`/odra-plugin:publish-web` for **testnet**: the page gets a public address on GitHub Pages, so the
+user can open it on their phone and send it to others. Two steps are the user's: the yes to
+making the site (and, on a free GitHub account, the code) public, and registering the CSPR.click
+app id. If they decline, skip the phase and say in `GUIDE.md` how to do it later.
+
+## Phase 8 — Hand over
 
 Write `GUIDE.md` in the project root, for this project and this user — concrete names, addresses
 and commands, not a generic tutorial:
@@ -181,9 +189,11 @@ and commands, not a generic tutorial:
    are deployed (explorer links), the web app, the token(s).
 2. **How it works** — the rules, including who can do what and what happens to money, and the
    "nothing happens by itself" point where it applies.
-3. **Try it** — start the web app; the wallet setup; a script of actions to perform and what to
-   expect after each; where to see it on the explorer.
-4. **Change it** — how to run the tests, redeploy or upgrade, regenerate the client.
+3. **Try it** — the public testnet address and how to start the web app locally; the wallet
+   setup; a script of actions to perform and what to expect after each; where to see it on the
+   explorer.
+4. **Change it** — how to run the tests, redeploy or upgrade, regenerate the client, publish the
+   page again (with the CSPR.click app id).
 5. **Accounts and keys** — which key files exist, what each is for (deployer, reader), which are
    secret, what must be backed up.
 6. **Going to mainnet** — the checklist from `/odra-plugin:go-mainnet`, with this project's costs
@@ -202,7 +212,7 @@ this skill — it costs real money and is a separate decision.
 - A contract does not compile or a test fails → `smart-contract-writer` (its `gotchas.md` first).
 - A deployment fails → the error table in `deploy-to-livenet`; an account that was never funded
   shows up as `Couldn't get purse uref`.
-- The page shows nothing → the table in `web-app`.
+- The page shows nothing → the table in `web-app`; only the published one → `publish-web`.
 - Anything about Odra's API → [`docs-map.md`](../../reference/docs-map.md), then the page it
   names. Do not improvise an API.
 
