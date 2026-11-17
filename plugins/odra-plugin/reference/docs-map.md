@@ -2,7 +2,7 @@
 
 Where to look when the plugin's bundled reference does not answer the question.
 
-The skills under `skills/*/reference/` cover the common path for Odra 2.10. This file covers
+The skills under `skills/*/reference/` cover the common path for Odra 2.11. This file covers
 everything else: it maps a question to the page that answers it, so you can fetch one page
 instead of searching the whole site.
 
@@ -19,8 +19,8 @@ instead of searching the whole site.
 Check the project's `Cargo.toml` for the `odra` version. If it is older than the latest release,
 prefer the matching versioned URL — API details do change between minor versions.
 
-Pages that exist only since 2.10 (the 2.10 migration guide, the Dapp Registry tutorial, the
-`#[odra(offchain)]` and call-stack sections) may 404 on the default URL for a short while after a
+Pages that exist only since the latest release (the 2.11 migration guide, the "Reading contract
+state" section of the Wasm-Client page) may 404 on the default URL for a short while after a
 release, until the versioned docs are cut. If that happens, fetch the same path under
 `https://odra.dev/docs/next/`.
 
@@ -52,7 +52,7 @@ docs build. If a page below 404s, fetch `llms.txt` — it is authoritative and t
 | How do I deploy to a real network? | [Livenet](https://odra.dev/docs/backends/livenet) |
 | How do I upgrade a deployed contract from the CLI? | [Odra CLI — Upgrade command](https://odra.dev/docs/tutorials/odra-cli#upgrade-command), [Upgrading Contracts](https://odra.dev/docs/tutorials/upgrades) |
 | How do I group the contracts of one dapp? | [Dapp Registry](https://odra.dev/docs/tutorials/dapp-registry) |
-| The API changed under me | [Migration to 2.10.0](https://odra.dev/docs/migrations/to-2.10.0) and the [CHANGELOG](https://github.com/odradev/odra/blob/HEAD/CHANGELOG.md) |
+| The API changed under me | [Migration to 2.11.0](https://odra.dev/docs/migrations/to-2.11.0) and the [CHANGELOG](https://github.com/odradev/odra/blob/HEAD/CHANGELOG.md) |
 | I need an exact signature | [docs.rs/odra](https://docs.rs/odra/latest/odra/) |
 
 ---
@@ -174,6 +174,9 @@ inventing an implementation.
 Read the guide for the version the project is moving to when code that used to compile no longer
 does. Newest first:
 
+- [to v2.11.0 from 2.10](https://odra.dev/docs/migrations/to-2.11.0) — a version bump and
+  cargo-odra 0.2.1; `#[odra(..)]` on a non-entry-point and two errors sharing a code no longer
+  build, `odra::link_contract_crates!()`
 - [to v2.10.0 from 2.9](https://odra.dev/docs/migrations/to-2.10.0) — mostly a version bump; new
   compile errors for mistakes that used to be ignored, `Erc20::mint`/`burn` no longer entry points,
   `#[odra::module(name)]` names the package key, no `resources/legacy`

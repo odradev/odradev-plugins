@@ -46,8 +46,8 @@ cargo odra test -b casper -s -- --nocapture       # show stdout, e.g. self.env()
 cargo odra test -- --release -- --nocapture       # cargo's own arguments go before a second `--`
 ```
 
-Only the name filter works with cargo-odra 0.2.0; the other two lines need 0.2.1 (`cargo odra
---version`). On 0.2.0 `-- --nocapture` fails with "unexpected argument"; run cargo directly instead:
+These need cargo-odra 0.2.1 (`cargo odra --version`). On 0.2.0 only the name filter works and
+`-- --nocapture` fails with "unexpected argument"; upgrade it, or run cargo directly:
 
 ```bash
 cargo test -- --nocapture                         # OdraVM
@@ -60,7 +60,7 @@ minutes each; later runs take seconds.
 
 If tests fail, help the user fix the issues. Explain any errors in context.
 
-## Things worth knowing (Odra 2.10)
+## Things worth knowing (Odra 2.11)
 
 - **A test can pin its backend.** `odra_test::env()` follows `-b`; `odra_test::odra_env()` always
   uses OdraVM and `odra_test::casper_env()` always CasperVM. Use `odra_env()` for a module that is

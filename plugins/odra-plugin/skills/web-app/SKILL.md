@@ -20,8 +20,11 @@ two ways, and both are already wired in the template:
 | **Writing** (transactions) | the generated client builds the transaction, [CSPR.click](https://docs.cspr.click) asks the user's wallet to sign and sends it | yes |
 
 **Prerequisites:** the contracts are deployed to testnet (`resources/casper-test-contracts.toml`
-exists — `/odra-plugin:deploy-to-livenet`), Node.js 20.19+ and `wasm-pack`
-(`cargo install wasm-pack`). 
+exists — `/odra-plugin:deploy-to-livenet`), Node.js 20.19+, `wasm-pack`
+(`cargo install wasm-pack`) and a project on **Odra 2.11 or newer** — the client generated for
+2.10 hangs on some reads, and `build-client.sh` refuses it; bump `odra*` in `Cargo.toml` first
+([migration guide](https://odra.dev/docs/migrations/to-2.11.0)).
+
 
 **Without testnet:** the page can be developed against a local NCTL node — reads only, since
 wallets do not send transactions to a local network. Run `/odra-plugin:setup-nctl`, then its
@@ -68,9 +71,8 @@ to tell the user:
   Reads are simulated and cost nothing, but the node refuses to simulate for an account that does
   not exist (`no such addressable entity`). 2.5 CSPR is the smallest possible transfer and enough.
 - Without the script, `cargo odra generate-client` builds a client with no key and every read fails
-  with `WASM_CLIENT_SK was empty at build time`. Setting `WASM_CLIENT_SK` to a normal multi-line PEM
-  fails too (`Invalid secret key`): the value is cut at the first newline. The script passes the
-  PEM on one line.
+  with `WASM_CLIENT_SK was empty at build time`. The script sets `WASM_CLIENT_SK` to the contents
+  of the key file.
 
 ## Step 2 — Scaffold `web/`
 
@@ -104,13 +106,12 @@ In `main.ts`:
   from the connected account with `account.address`, numbers with `U256.fromBigInt(1n)`. An
   address reads `entity-account-<hex>` or `hash-<hex>`; link it with `addressUrl()` from
   `network.ts`, and compare it with `currentAccount()?.address.value` to mark "you".
-- **Lookups go through `readOr`**: `await readOr(undefined, () => contract.ownerOf(id))`,
-  `await readOr(U256.zero(), () => contract.balanceOf(address))`. A getter that looks something up
-  reverts when it is not there, and — with odra-wasm-client up to 2.10.1 — a getter reading a
-  mapping nobody has written to yet (balances before the first transfer, owners before the first
-  mint) can crash inside the client and **never answer**: the page hangs with only
-  `RuntimeError: unreachable` in the console. `readOr` turns both into the fallback value. (The crash is fixed in Odra after 2.10.1; `readOr`
-  stays useful for the reverts.)
+- **A getter that reverts rejects its promise.** Where "not there" is an expected answer — a
+  getter of your own that reverts for an unknown id — wrap the read:
+  `await readOr(undefined, () => contract.auction(id))`. The getters of `Cep18` and `Cep95` do not
+  revert (`ownerOf` → `undefined`, `balanceOf` → zero, `tokenMetadata` → empty) and need no
+  wrapper, also before anything was written. Do not wrap everything: `readOr` hides a network
+  failure as well.
 - Reads are slow (about a second each, one network round trip per getter). Read what the page
   shows, not everything the contract has; refresh on a timer of tens of seconds, not every second.
 - **Writes** go through `transact(() => send(<gas in CSPR>, () => contract.<entryPoint>(args)))`.
@@ -183,9 +184,9 @@ When a read fails, open the browser console; the usual causes:
 
 | Message | Cause |
 | --- | --- |
-| `WASM_CLIENT_SK was empty at build time` / `Invalid secret key` | client built without `build-client.sh` |
+| `WASM_CLIENT_SK was empty at build time` | client built without `build-client.sh` |
 | `no such addressable entity` | the reader account has never been funded on this network |
-| `RuntimeError: unreachable`, and the page waits forever | a lookup in a never-written mapping — wrap the read in `readOr` |
+| `RuntimeError: unreachable`, and the page waits forever | the client was built with odra-wasm-client 2.10: bump the project to Odra 2.11, delete `<project>_client/Cargo.lock`, run `build-client.sh` |
 | `Speculative execution failed for '<getter>': ... User(<code>)` | the getter reverted with that contract error — expected for a missing item, wrap in `readOr` |
 | `missing field` when loading `contracts.<chain>.json` | the file was written by hand; use `sync-contracts.sh` |
 | the `.wasm` request fails in `npm run dev` | `server.fs.allow` was removed from `vite.config.ts` (the client lives outside `web/`) |

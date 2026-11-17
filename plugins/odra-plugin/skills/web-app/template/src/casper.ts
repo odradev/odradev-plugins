@@ -100,14 +100,12 @@ export function prepareRead(gasCspr = 5) {
 }
 
 /**
- * Runs a read that may have nothing to return yet, and gives `fallback` instead of failing.
- * Use it for getters with arguments that look something up (`balanceOf`, `ownerOf`, ...): a
- * lookup of something that does not exist reverts, and with odra-wasm-client up to 2.10.1 a
- * lookup in a collection nobody has written to yet never answers at all - hence the timeout.
+ * Runs a read that may have nothing to return, and gives `fallback` instead of failing.
+ * Use it for getters that revert when the thing looked up does not exist. It hides every other
+ * failure of that read too, so not for getters that always answer.
  */
-export function readOr<T>(fallback: T, call: () => Promise<T>, timeoutMs = 15_000): Promise<T> {
-  const timeout = new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs));
-  return Promise.race([call().catch(() => fallback), timeout]);
+export function readOr<T>(fallback: T, call: () => Promise<T>): Promise<T> {
+  return call().catch(() => fallback);
 }
 
 /** "12.5" -> 12_500_000_000 motes, without going through floating point. `null` if not a number. */

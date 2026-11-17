@@ -20,7 +20,7 @@ on CSPR.trade, explains what it did along the way and leaves a `GUIDE.md` coveri
 app and take it to mainnet. Each step is also a skill of its own, and experienced Odra developers
 can use the plugin for its knowledge of Odra's APIs, patterns and tooling alone.
 
-The bundled reference targets **Odra 2.10** and **cargo-odra 0.2.0**. Older projects still work with
+The bundled reference targets **Odra 2.11** and **cargo-odra 0.2.1**. Older projects still work with
 every skill; the plugin points at the matching versioned docs and the migration guide when it meets one.
 
 ## Prerequisites
@@ -28,7 +28,7 @@ every skill; the plugin points at the matching versioned docs and the migration 
 The plugin drives Odra's own toolchain — it does not replace it. Before installing, make sure you have:
 
 - Rust toolchain with the `wasm32-unknown-unknown` target
-- [`cargo-odra`](https://github.com/odradev/cargo-odra) 0.2.0 or newer: `cargo install cargo-odra --locked`
+- [`cargo-odra`](https://github.com/odradev/cargo-odra) 0.2.1 or newer: `cargo install cargo-odra --locked`
 - `wasm-strip` ([wabt](https://github.com/WebAssembly/wabt)) and `wasm-opt`
   ([binaryen](https://github.com/WebAssembly/binaryen), **121 or newer** — distribution packages are
   usually too old)

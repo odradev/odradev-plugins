@@ -12,6 +12,19 @@ set -euo pipefail
 [ -f Odra.toml ] || { echo "Error: run this from the Odra project root (no Odra.toml here)." >&2; exit 1; }
 command -v wasm-pack >/dev/null || { echo "Error: wasm-pack is not installed. Install it with: cargo install wasm-pack" >&2; exit 1; }
 
+# The client of Odra 2.10 never answers a read of a mapping nobody has written to yet, and takes
+# the key only as a one-line PEM. Checked for a crates.io dependency; a git or path one passes.
+ODRA_ID="$(cargo pkgid odra 2>/dev/null || true)"
+case "$ODRA_ID" in
+  registry+*)
+    ODRA_VERSION="${ODRA_ID##*[#@]}"
+    if [ "$(printf '%s\n' 2.11.0 "$ODRA_VERSION" | sort -V | head -n1)" != "2.11.0" ]; then
+      echo "Error: this project uses Odra $ODRA_VERSION; the web client needs 2.11.0 or newer." >&2
+      echo "Set the odra crates in Cargo.toml to 2.11.0 (https://odra.dev/docs/migrations/to-2.11.0), run the tests, then run this again." >&2
+      exit 1
+    fi ;;
+esac
+
 SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
 ACCOUNT_SCRIPTS="$SCRIPTS/../../setup-account/scripts"
 READER_KEY="${READER_KEY:-keys/reader_secret_key.pem}"
@@ -36,8 +49,6 @@ if [ -f .gitignore ] && ! grep -q "_client/target" .gitignore; then
   printf '\n# generated contract client: build output\n/*_client/target\n/*_client/pkg-web\n' >> .gitignore
 fi
 
-# The key reaches the build through a cargo directive that ends at the first newline, so it is
-# passed as a one-line PEM (which the client parses fine).
-WASM_CLIENT_SK="$(tr -d '\r\n' < "$READER_KEY")" cargo odra generate-client
+WASM_CLIENT_SK="$(cat "$READER_KEY")" cargo odra generate-client
 
 echo "Reader account (public key): $("$ACCOUNT_SCRIPTS/public-key.sh" "$READER_KEY")" >&2

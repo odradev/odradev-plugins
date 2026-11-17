@@ -12,7 +12,7 @@ brings the livenet backend with it, no `livenet` feature is needed):
 
 ```toml
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-odra-cli = { version = "2.10.0", default-features = false }
+odra-cli = { version = "2.11.0", default-features = false }
 
 [[bin]]
 name = "my_project_cli"

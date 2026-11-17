@@ -58,7 +58,7 @@ Read these files to understand the framework:
 2. [`contract-model.md`](./reference/core/contract-model.md) — `#[odra::module]`, HostRef, Deployer, init convention
 3. [`modules.md`](./reference/core/modules.md) — defining and composing reusable modules with `SubModule`
 4. [`cli.md`](./reference/core/cli.md) — writing deploy scripts and CLI scenarios, `load_or_deploy` pattern
-5. [`gotchas.md`](./reference/gotchas.md) — verified traps in Odra 2.10 (API signatures that differ from the
+5. [`gotchas.md`](./reference/gotchas.md) — verified traps in Odra 2.11 (API signatures that differ from the
    obvious guess, new compile errors, OdraVM behaviour). Read this every time; it is short and it is the
    difference between compiling first try and burning a cycle on E0599.
 
@@ -88,7 +88,7 @@ but adapt as needed to the user's specific requirements and constraints.
 
 ### When the reference files are not enough
 
-They cover Odra 2.10 and are deliberately narrow. If a question falls outside them — a newer API, an
+They cover Odra 2.11 and are deliberately narrow. If a question falls outside them — a newer API, an
 unfamiliar module, an exact type signature — go upstream instead of guessing.
 
 Read [`docs-map.md`](../../reference/docs-map.md) and fetch the page it points to. It maps

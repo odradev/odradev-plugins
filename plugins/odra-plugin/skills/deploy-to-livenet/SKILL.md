@@ -27,8 +27,8 @@ If not stated, ask the user with `AskUserQuestion`:
 ## Step 2 — Ensure Environment is Ready
 
 The CLI reads its configuration from `<network>.env` (`nctl.env`, `testnet.env`, `mainnet.env`),
-selected with `ODRA_CASPER_LIVENET_ENV=<network>`; `.env` fills in anything missing. The 2.10
-project templates git-ignore `*.env` and `secret_key*.pem`; for an older project, check
+selected with `ODRA_CASPER_LIVENET_ENV=<network>`; `.env` fills in anything missing. The
+project templates (Odra 2.10+) git-ignore `*.env` and `secret_key*.pem`; for an older project, check
 `.gitignore` before writing a file that names a key.
 
 ### For nctl

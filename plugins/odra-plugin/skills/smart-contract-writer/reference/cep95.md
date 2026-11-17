@@ -32,7 +32,9 @@ impl MyNft {
 ```
 
 `self.token.init(name, symbol)` and the `cep95` project template's
-`self.token.name.set(name); self.token.symbol.set(symbol);` do the same thing.
+`self.token.name.set(name); self.token.symbol.set(symbol);` do the same thing. The template already
+guards its entry points this way (an `Ownable`, `mint` for the owner, `burn` for the token's
+owner).
 
 ## Cep95 SubModule Fields
 

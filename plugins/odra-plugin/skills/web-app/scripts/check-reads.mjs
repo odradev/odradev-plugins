@@ -66,7 +66,6 @@ const contract = new Wrapper(odra, new client.Address(packageHash));
 client.setGas(5_000_000_000n);
 
 const show = (v) => (v === undefined ? "undefined" : typeof v === "bigint" ? `${v}n` : v?.value ?? String(v));
-const TIMEOUT = Symbol("timeout");
 let failed = 0;
 console.log(`${contractName} ${packageHash} on ${chainName}`);
 for (const getter of getters) {
@@ -76,16 +75,7 @@ for (const getter of getters) {
     continue;
   }
   try {
-    const value = await Promise.race([
-      contract[getter](),
-      new Promise((r) => setTimeout(() => r(TIMEOUT), 20_000)),
-    ]);
-    if (value === TIMEOUT) {
-      console.log(`  ${getter}: no answer in 20 s (the client crashed inside, see web-app SKILL.md)`);
-      failed++;
-    } else {
-      console.log(`  ${getter}: ${show(value)}`);
-    }
+    console.log(`  ${getter}: ${show(await contract[getter]())}`);
   } catch (e) {
     console.log(`  ${getter}: FAILED - ${e?.message ?? e}`);
     failed++;

@@ -27,8 +27,8 @@ function setStatus(text: string, kind: "" | "ok" | "err" = "", link?: string) {
 async function refresh() {
   prepareRead();
   // Read entry points here, one `await contract.<getter>()` each, and put the values on the page.
-  // Lookups that may find nothing go through readOr() from ./casper:
-  //   const owner = await readOr(undefined, () => contract.ownerOf(id));
+  // A getter that reverts when the thing is not there goes through readOr() from ./casper:
+  //   const auction = await readOr(undefined, () => contract.auction(id));
   $("summary").textContent = "Connected to the contract.";
 }
 
