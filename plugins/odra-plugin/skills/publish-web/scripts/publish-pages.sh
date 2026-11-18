@@ -44,7 +44,7 @@ if [ -n "$SLUG" ]; then
       echo "Error: CSPR.click does not know the app id $APP_ID. Copy it again from https://console.cspr.build." >&2; exit 1 ;;
     *'"wrong origin'*)
       echo "Error: the app id $APP_ID is not registered for $SITE_ORIGIN." >&2
-      echo "In https://console.cspr.build open the application and add exactly $SITE_ORIGIN (no path) to its allowed origins, then run this again." >&2
+      echo "In https://console.cspr.build open the application and add the domain ${SITE_ORIGIN#*://} (no https://, no path), then run this again." >&2
       exit 1 ;;
     *'"chain_name"'*)
       APP_CHAIN="$(printf '%s' "$APP_JSON" | sed -nE 's/.*"chain_name": *"([^"]*)".*/\1/p')"

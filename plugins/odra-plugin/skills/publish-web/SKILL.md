@@ -60,14 +60,15 @@ wallets do not connect. Give the user these steps and wait for the id:
 1. Open <https://console.cspr.build> and sign up (free).
 2. Create a CSPR.click application for this project, for the network being published (Testnet
    first).
-3. Register the site's **origin** for it: `https://<owner>.github.io` — scheme and host only, no
-   path. An id answers only pages served from a registered origin (and from `localhost`).
+3. Add the site's **domain** to the application: `<owner>.github.io` — the host only, without
+   `https://` and without a path. An id answers only pages served from a registered domain (and
+   from `localhost`).
 4. Copy the application id and paste it here. Only the id: an API key shown next to it is a
    secret of their account, is not needed for the page and must not be pasted or committed.
 
 The id is not a secret — it ships in the page. Keep it in `GUIDE.md` so the next publish has it.
 An application is set to one network, so the mainnet page needs a second application (or the
-first one switched), registered for the same origin. `publish-pages.sh` checks all of this before
+first one switched), registered for the same domain. `publish-pages.sh` checks all of this before
 it builds and says which part is wrong.
 
 ## Step 4 — Publish
@@ -112,7 +113,7 @@ and the app id to `GUIDE.md`.
 
 | Message | Cause |
 | --- | --- |
-| `the app id ... is not registered for https://...` | Step 3.3: the origin is missing in the console, or has a path or a typo |
+| `the app id ... is not registered for https://...` | Step 3.3: the domain is missing in the console, or was entered with `https://`, a path or a typo |
 | `the app id ... is set to the network ...` | the application belongs to the other network: create one for this network |
 | `GitHub Pages could not be turned on` | the repository is private on a free plan, or `gh` lacks rights to it |
 | `does not serve this build after 3 minutes` | Pages is still building (first publish), or the build failed: `gh api repos/<owner>/<repo>/pages/builds/latest` |
