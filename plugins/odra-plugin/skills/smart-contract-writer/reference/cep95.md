@@ -7,7 +7,7 @@ Use it as a `SubModule` to add NFT capabilities to any contract.
 
 ```rust
 use odra::prelude::*;
-use odra::casper_types::{U256, U512};
+use odra::casper_types::U256;
 use odra_modules::cep95::{Cep95, CEP95Interface};
 
 #[odra::module]
@@ -30,6 +30,11 @@ impl MyNft {
     }
 }
 ```
+
+`self.token.init(name, symbol)` and the `cep95` project template's
+`self.token.name.set(name); self.token.symbol.set(symbol);` do the same thing. The template already
+guards its entry points this way (an `Ownable`, `mint` for the owner, `burn` for the token's
+owner).
 
 ## Cep95 SubModule Fields
 

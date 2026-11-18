@@ -1,0 +1,39 @@
+:root {
+  --bg: #f6f5f1; --card: #ffffff; --ink: #1c1b19; --muted: #6d6a63; --line: #e3e0d8;
+  --accent: #c8102e; --accent-ink: #ffffff; --ok: #1f7a4d; --err: #b3261e;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151412; --card: #1f1e1b; --ink: #f1efe9; --muted: #a09c93; --line: #33312c;
+    --accent: #ff4d5e; --accent-ink: #1a0508; --ok: #6fd19f; --err: #ff8a80;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, sans-serif; }
+#root { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+h1 { font-size: 1.4rem; margin: 0; }
+h2 { font-size: 1rem; margin: 0 0 12px; }
+.account { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.9rem; }
+.tag { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; color: var(--muted); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.label { margin: 0; color: var(--muted); }
+.big { margin: 0 0 16px; font-size: 2.6rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0 0 20px; }
+dt { color: var(--muted); }
+dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+form { display: flex; flex-wrap: wrap; gap: 8px; }
+input { flex: 1 1 180px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; }
+button { padding: 10px 16px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer; }
+button.quiet { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 500; }
+button:disabled { opacity: 0.5; cursor: default; }
+.hint, .muted, footer { color: var(--muted); font-size: 0.875rem; }
+ul { list-style: none; margin: 0 0 16px; padding: 0; }
+li { display: flex; justify-content: space-between; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+#status { min-height: 1.5em; overflow-wrap: anywhere; }
+#status.ok { color: var(--ok); }
+#status.err { color: var(--err); }
+a { color: inherit; }
+[hidden] { display: none !important; }

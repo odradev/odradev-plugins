@@ -7,7 +7,7 @@ developer experience where contracts are plain Rust structs, and multiple backen
 execution: an in-memory VM for fast unit tests, a full Casper execution engine for
 integration tests, and a livenet client for production deployments.
 
-## Project layout (Odra 2.10 templates)
+## Project layout (Odra 2.11 templates)
 
 Single-crate templates (`full`, `blank`, `cep18`, `cep95`):
 
@@ -26,7 +26,7 @@ Single-crate templates (`full`, `blank`, `cep18`, `cep95`):
 
 The `workspace` template puts each contract crate in its own directory (`<crate>/src/`, fqn
 `<crate>::<module>::<Struct>`), the CLI in `cli/cli.rs`, and the one `wasm/` directory at the
-workspace root — Odra 2.10 looks for wasm files in the working directory and every directory above
+workspace root — Odra looks for wasm files in the working directory and every directory above
 it.
 
 ## Crate Map

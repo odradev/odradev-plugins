@@ -5,7 +5,7 @@ description: >
   Use when the user says "deploy", "deploy to livenet", "deploy to nctl",
   "deploy to testnet", "deploy to mainnet", "run on livenet", "upgrade on livenet",
   or "deploy-to-livenet".
-allowed-tools: Bash(docker ps *),Bash(cargo *),Bash(${CLAUDE_SKILL_DIR}/scripts/*),Bash(ls *),Bash(cat *),Skill(setup-nctl),Read,Write,AskUserQuestion,WebFetch
+allowed-tools: Bash(docker ps *),Bash(cargo *),Bash(${CLAUDE_SKILL_DIR}/scripts/*),Bash(ls *),Bash(cat *),Skill(setup-nctl),Skill(setup-account),Read,Write,AskUserQuestion,WebFetch
 ---
 
 # Deploy Contracts to Livenet
@@ -27,8 +27,8 @@ If not stated, ask the user with `AskUserQuestion`:
 ## Step 2 — Ensure Environment is Ready
 
 The CLI reads its configuration from `<network>.env` (`nctl.env`, `testnet.env`, `mainnet.env`),
-selected with `ODRA_CASPER_LIVENET_ENV=<network>`; `.env` fills in anything missing. The 2.10
-project templates git-ignore `*.env` and `secret_key*.pem`; for an older project, check
+selected with `ODRA_CASPER_LIVENET_ENV=<network>`; `.env` fills in anything missing. The
+project templates (Odra 2.10+) git-ignore `*.env` and `secret_key*.pem`; for an older project, check
 `.gitignore` before writing a file that names a key.
 
 ### For nctl
@@ -37,37 +37,38 @@ Run `/odra-plugin:setup-nctl`. It starts the node if needed and writes `nctl.env
 
 ### For testnet
 
-Check if `testnet.env` exists. If not, create it:
+If `testnet.env` does not exist, run `/odra-plugin:setup-account`: it creates or takes a key, gets
+the account funded (the faucet) and writes the file:
 
-1. Ask the user for their secret key path (must be a `.pem` file on disk, funded on testnet). Verify
-   it exists.
+```env
+ODRA_CASPER_LIVENET_SECRET_KEY_PATH=keys/testnet_secret_key.pem
+ODRA_CASPER_LIVENET_NODE_ADDRESS=https://node.testnet.casper.network
+ODRA_CASPER_LIVENET_EVENTS_URL=https://node.testnet.casper.network/events
+ODRA_CASPER_LIVENET_CHAIN_NAME=casper-test
+```
 
-2. Pick a node. Offer two options:
-   - **CSPR.cloud public node** (default, no discovery needed):
-     `https://node.testnet.cspr.cloud`. Rate-limited for anonymous use; a `CSPR_CLOUD_AUTH_TOKEN`
-     lifts the limit.
-   - **A peer of the network**: run the bundled discovery script, which fetches peers, tests
-     connectivity, and prints a responsive node IP to stdout:
-     ```bash
-     ${CLAUDE_SKILL_DIR}/scripts/discover-node.sh testnet
-     ```
-   Or take a node address the user provides.
+`https://node.testnet.casper.network` is the public node of the Casper Association and needs no
+registration. Alternatives:
 
-3. Write `testnet.env`:
-   ```env
-   ODRA_CASPER_LIVENET_SECRET_KEY_PATH=<user-provided-path>
-   ODRA_CASPER_LIVENET_NODE_ADDRESS=https://node.testnet.cspr.cloud
-   ODRA_CASPER_LIVENET_EVENTS_URL=https://node.testnet.cspr.cloud/events
-   ODRA_CASPER_LIVENET_CHAIN_NAME=casper-test
-   # CSPR_CLOUD_AUTH_TOKEN=
-   ```
-   With a discovered peer the addresses are `http://<node-ip>:7777` and
-   `http://<node-ip>:9999/events`.
+- **CSPR.cloud**: `https://node.testnet.cspr.cloud` (events: `.../events`) — **only with**
+  `CSPR_CLOUD_AUTH_TOKEN=<token>` in the file (free at <https://console.cspr.build>). Without a
+  token it answers `401 authorization is not provided`.
+- **A peer of the network**: the bundled discovery script fetches peers, tests connectivity and
+  prints a responsive node IP; the addresses are then `http://<node-ip>:7777` and
+  `http://<node-ip>:9999/events`:
+  ```bash
+  ${CLAUDE_SKILL_DIR}/scripts/discover-node.sh testnet
+  ```
+
+An account that has never received CSPR does not exist on chain: every command then fails with
+`Couldn't get purse uref for address`. Fund it first.
 
 ### For mainnet
 
-Same flow as testnet but:
-- Public node: `https://node.cspr.cloud` (events: `https://node.cspr.cloud/events`), or
+Same flow (`/odra-plugin:setup-account` for mainnet, or `/odra-plugin:go-mainnet` for the whole
+launch) but:
+- Public node: `https://node.mainnet.casper.network` (events:
+  `https://node.mainnet.casper.network/events`); or `https://node.cspr.cloud` with a token, or
   `${CLAUDE_SKILL_DIR}/scripts/discover-node.sh mainnet`
 - Chain name: `casper`
 - Write to `mainnet.env`
@@ -119,6 +120,26 @@ ${CLAUDE_SKILL_DIR}/scripts/deploy.sh nctl status
 ${CLAUDE_SKILL_DIR}/scripts/deploy.sh nctl contract Flipper get
 ${CLAUDE_SKILL_DIR}/scripts/deploy.sh nctl scenario flip --number 3
 ```
+
+Environment variables of the calling shell reach the deploy script, so a script that reads its
+constructor arguments with `std::env::var` is parameterised on the command line (record the values
+used — nothing else does):
+
+```bash
+ROUND_DURATION_MS=300000 ${CLAUDE_SKILL_DIR}/scripts/deploy.sh testnet
+```
+
+What a transaction cost — the CLI prints its hash and explorer link, not the cost:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/tx-cost.sh testnet <transaction hash or explorer link>
+# limit 450.000 CSPR, consumed 386.902 CSPR, refund 47.323 CSPR, charged 402.677 CSPR
+```
+
+The charge is the consumed gas plus a quarter of the unused part of the limit. Before the first
+install on a network where CSPR matters, measure the consumption on the Casper VM (a test printing
+`env.gas_report()`, run with `ODRA_BACKEND=casper cargo test <name> -- --nocapture`) and set the
+limit in the deploy script to that plus 15–20%; the template's default limit is a guess.
 
 **Important:**
 - Deployments can take 30-90 seconds per contract

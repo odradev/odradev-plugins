@@ -4,14 +4,16 @@ description: >
   Validate the development environment for Odra smart contract development.
   Use when the user says "check env", "check setup", "check prerequisites",
   "verify environment", or "check-env".
-allowed-tools: Bash(rustc *),Bash(rustup *),Bash(cargo odra *),Bash(wasm-opt *),Bash(wasm-strip *),Bash(docker *),Bash(cc *),Bash(pkg-config *),Bash(command -v *),Bash(cat *),Bash(uname *),Read,WebFetch
+allowed-tools: Bash(rustc *),Bash(rustup *),Bash(cargo odra *),Bash(wasm-opt *),Bash(wasm-strip *),Bash(docker *),Bash(cc *),Bash(pkg-config *),Bash(command -v *),Bash(node *),Bash(wasm-pack *),Bash(cat *),Bash(uname *),Read,WebFetch
 ---
 
 # Check Development Environment
 
 Validates that all prerequisites for Odra development are installed.
 
-**Run the checks from inside the project directory** when there is one. Two of them —
+**Run the checks from inside the project directory** when there is one. Before a project exists,
+run everything once, and repeat only the Rust toolchain and wasm target checks from inside the
+project after it is scaffolded. Two of them —
 the Rust toolchain and the wasm target — resolve differently depending on the working
 directory, and checking from the wrong place reports a healthy environment that cannot build.
 
@@ -75,7 +77,7 @@ rustup show active-toolchain
 cat rust-toolchain.toml 2>/dev/null || cat rust-toolchain 2>/dev/null
 ```
 
-Odra projects pin a nightly. Projects generated from the Odra 2.10 templates do it in
+Odra projects pin a nightly. Projects generated from the current templates (Odra 2.10+) do it in
 `rust-toolchain.toml` (`channel = "nightly-2026-01-01"`, plus the `rust-analyzer` component);
 older projects have a bare `rust-toolchain` file with just the channel name. Either way, inside the
 project `rustup show active-toolchain` should report that pinned version with "overridden by" —
@@ -138,16 +140,18 @@ If missing:
 Requires the C toolchain and `pkg-config`/OpenSSL above — check those first, since this is where
 their absence shows up.
 
-Version: **0.2.0 or newer** is the current release and the one to install;
-`cargo install cargo-odra --locked` also upgrades an older one. 0.1.8 still builds and tests a
-single-crate Odra 2.10 project, but it cannot build contracts from dependency crates
-(`fqn = "odra_modules::erc20::Erc20"` in `Odra.toml`) and it copies the wasm into every workspace
-member, where a stale copy can shadow a fresh build. Report the version: below 0.1.8 is a failure,
-0.1.8 is OLD.
+Version: **0.2.1 or newer** goes with Odra 2.11 and is the one to install;
+`cargo install cargo-odra --locked` also upgrades an older one. 0.2.0 still builds and tests an
+Odra 2.11 project, but `cargo odra test -- --nocapture` fails with "unexpected argument", every
+contract build recompiles `odra-modules`, and a dependency contract whose crate was not linked is
+saved as a wasm without entry points instead of failing the build. 0.1.8 also cannot build
+contracts from dependency crates (`fqn = "odra_modules::erc20::Erc20"` in `Odra.toml`) and copies
+the wasm into every workspace member, where a stale copy can shadow a fresh build. Report the
+version: below 0.1.8 is a failure, 0.1.8 and 0.2.0 are OLD.
 
-Note the pairing with the Odra version: cargo-odra 0.2.0 writes the wasm of a workspace only to the
-root `wasm/`, where Odra 2.10 looks and Odra 2.9 does not. A workspace project still on Odra 2.9
-needs either the bump to 2.10 or cargo-odra 0.1.8. Single-crate projects are unaffected.
+Note the pairing with the Odra version: cargo-odra 0.2.x writes the wasm of a workspace only to the
+root `wasm/`, where Odra 2.10+ looks and Odra 2.9 does not. A workspace project still on Odra 2.9
+needs either the bump to 2.11 or cargo-odra 0.1.8. Single-crate projects are unaffected.
 
 ### wasm-opt (binaryen) — version matters
 
@@ -197,6 +201,17 @@ If missing:
 - Fedora: `sudo dnf install wabt`
 - macOS: `brew install wabt`
 
+### Node.js and wasm-pack (optional — the web app)
+
+```bash
+node --version
+wasm-pack --version
+```
+
+Needed only for a web front end (`/odra-plugin:web-app`, `cargo odra generate-client`): Node.js
+20.19 or newer, and any `wasm-pack`. If missing: Node from <https://nodejs.org> or the system
+package manager; `cargo install wasm-pack`.
+
 ### Docker (optional)
 
 ```bash
@@ -220,7 +235,7 @@ Present a summary table:
 | pkg-config + OpenSSL      | OK/MISSING | install command    |
 | Rust toolchain (pinned)   | OK/MISSING | install command    |
 | wasm32-unknown-unknown    | OK/MISSING | install command    |
-| cargo-odra (>= 0.2.0)     | OK/OLD/MISSING | install command |
+| cargo-odra (>= 0.2.1)     | OK/OLD/MISSING | install command |
 | wasm-opt (binaryen >= 121)| OK/OLD/MISSING | install command |
 | wasm-strip (wabt)         | OK/MISSING | install command    |
 | Docker (optional)         | OK/MISSING | install link       |
@@ -236,7 +251,7 @@ If items are missing, list the install commands and explain what each tool is fo
 - **pkg-config + OpenSSL**: build-time dependency of `cargo-odra` (on macOS, OpenSSL only)
 - **Rust toolchain**: the pinned nightly the project compiles with (`rust-toolchain.toml`)
 - **wasm32-unknown-unknown**: WebAssembly compilation target for smart contracts
-- **cargo-odra**: Odra's build/test tool — wraps cargo with WASM compilation steps (0.2.0 goes with Odra 2.10)
+- **cargo-odra**: Odra's build/test tool — wraps cargo with WASM compilation steps (0.2.1 goes with Odra 2.11)
 - **wasm-opt**: optimizes WASM binaries for smaller contract size
 - **wasm-strip**: strips debug info from WASM binaries
 - **Docker**: runs a local Casper blockchain node for testing deployments
@@ -258,7 +273,9 @@ on binaryen, tell them they can proceed on OdraVM meanwhile.
 ## Note on the project's Odra version
 
 While in the project, also read the `odra` version from `Cargo.toml`. The plugin's bundled
-reference targets Odra 2.10. A project on 2.9 or older still works with every skill, but point the
-user at the [migration guide to 2.10.0](https://odra.dev/docs/migrations/to-2.10.0) — for most
-projects it is a version bump — and prefer the matching versioned docs URL (see
+reference targets Odra 2.11. A project on 2.10 or older still works with the contract, test and
+deploy skills, but `web-app` needs 2.11 (the generated client of 2.10 cannot read a mapping nobody
+has written to yet). Point the user at the
+[migration guide to 2.11.0](https://odra.dev/docs/migrations/to-2.11.0) — for most projects it is
+a version bump — and prefer the matching versioned docs URL (see
 [`docs-map.md`](../../reference/docs-map.md)) when looking things up for it.

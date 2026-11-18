@@ -1,12 +1,14 @@
 {
   "name": "odra-plugin",
-  "description": "Streamlines an Odra project development (Odra 2.10, cargo-odra 0.2.0)",
+  "description": "From an idea to a dapp on Casper: Odra contracts, tests, testnet and mainnet deployment, a wallet-connected web app and token listing (Odra 2.11, cargo-odra 0.2.1)",
   "repository": "https://github.com/odradev/odradev-plugins",
   "homepage": "https://odra.dev/docs",
   "keywords": [
     "odra",
     "rust",
     "smart contracts",
-    "blockchain"
+    "blockchain",
+    "casper",
+    "dapp"
   ]
 }

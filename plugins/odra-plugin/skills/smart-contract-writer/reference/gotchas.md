@@ -1,7 +1,7 @@
 # Odra gotchas
 
-Traps that cost time when writing Odra 2.10 code. Every item here was hit and reproduced against a
-real project, or is a behaviour change documented in the 2.10 changelog — these are not hypotheticals.
+Traps that cost time when writing Odra 2.11 code. Every item here was hit and reproduced against a
+real project, or is a behaviour change documented in the 2.10 and 2.11 changelogs — these are not hypotheticals.
 
 Read this file before writing any non-trivial contract, and again when a compile error does not make
 obvious sense.
@@ -14,8 +14,8 @@ obvious sense.
   hand produces something that looks right and fails later in ways that read as contract bugs.
 - **`cargo odra new` takes the Odra version from the latest GitHub release**, which can lag crates.io
   for a few days after a release. Check `odra = ` in the generated `Cargo.toml`; pin with
-  `-s 2.10.0` if it is older. With cargo-odra 0.2.0 a `workspace` project on Odra 2.9 cannot find its
-  wasm (0.2.0 writes it only to the root `wasm/`, where 2.9 does not look).
+  `-s 2.11.0` if it is older. With cargo-odra 0.2.x a `workspace` project on Odra 2.9 cannot find its
+  wasm (0.2.x writes it only to the root `wasm/`, where 2.9 does not look).
 - **The project pins a nightly toolchain** in `rust-toolchain.toml` (older projects: a bare
   `rust-toolchain` file). rustup installs it on first build, so the first `cargo odra test` is slow.
   `rustup target add wasm32-unknown-unknown` must apply to *that* toolchain — run it from inside the
@@ -29,10 +29,10 @@ obvious sense.
   failure only surfaces later, at `cargo odra build`.
 - **`fqn` is a Rust path, not a package path.** Single-crate: `fqn = "flipper::Flipper"`
   (`<module>::<Struct>`). Workspace: `fqn = "flipper::flipper::Flipper"` (`<crate>::<module>::<Struct>`).
-  Since 2.10 the first segment may be a dependency crate (`fqn = "odra_modules::erc20::Erc20"`,
-  needs cargo-odra 0.2.0). The crate must be linked into `bin/build_contract.rs` and
-  `bin/build_schema.rs`: on 2.10 with a `use odra_modules;` in both, as the comment there says; from
-  2.11 the `odra::link_contract_crates!();` line of a generated project does it.
+  The first segment may be a dependency crate (`fqn = "odra_modules::erc20::Erc20"`). The crate
+  must be linked into `bin/build_contract.rs` and `bin/build_schema.rs`: the
+  `odra::link_contract_crates!();` line of a generated project does it (a project generated for
+  2.10 has a `use odra_modules;` in both instead, or gets the line added).
 - **The wasm file is named after the struct, case included** — `Flipper.wasm`, not `flipper.wasm`.
 - **`cargo odra build` has no `-b`/`--backend` flag.** Only `cargo odra test` does. `-c` selects
   contracts and takes **space**-separated names: `cargo odra build -c Foo Bar`.
@@ -82,6 +82,12 @@ obvious sense.
 - **`#[odra(..)]` accepts exactly `payable`, `non_reentrant` and `offchain`.** A typo
   (`#[odra(paybale)]`), a repeat (`#[odra(payable, payable)]`) or a value (`payable = true`) is a
   compile error since 2.10; before, it compiled and did nothing.
+- **`#[odra(..)]` belongs on entry points only.** On a function that is not `pub` in a module impl
+  (a private helper), `payable`, `non_reentrant` and `offchain` are compile errors since 2.11 — they
+  used to be accepted and did nothing, so a `non_reentrant` helper was not guarded.
+- **Every error of a contract needs its own code** (2.11): `cargo odra schema` and `build` fail when
+  two errors of its modules share a discriminant, naming both. See `errors.md` for the ranges
+  `odra-modules` uses.
 - **`#[odra(payable)]` or `non_reentrant` on `init` or `upgrade` is a compile error** (2.10). A
   constructor can never receive attached tokens; fund the contract through a separate payable entry
   point after deploy.
@@ -96,6 +102,13 @@ obvious sense.
   cannot be `payable`/`non_reentrant`, are not on the `ContractRef` (other contracts cannot call
   them) and are not in the wasm. They may call the contract's own functions and non-mutating entry
   points of other contracts.
+- **Bind before you pass to a submodule.** `self.ownable.init(self.env().caller())` and
+  `self.token.raw_mint(to, id, self.metadata_of(id))` fail with E0502 (`cannot borrow *self as
+  immutable because it is also borrowed as mutable`): the submodule call borrows `self` mutably
+  first. Write `let caller = self.env().caller(); self.ownable.init(caller);`.
+- **`Address::is_contract()`** tells a contract from an account — the check for "accounts only".
+  A call from the CLI or a wallet has the account as `caller()`, also when it goes through the
+  proxy caller (payable calls).
 - **`ContractEnv::attached_value()` returns `U512`**, not `U256`.
 - **`self.env()` is a method, not a field.** `self.env.revert(...)` fails with E0615.
 - **`#[odra::external_contract]` keeps the trait** (2.10). A second hand-written copy of the trait,
@@ -171,7 +184,10 @@ obvious sense.
   no `assert_caller` — compare `self.env().caller()` yourself and revert. Its `mint`/`burn` are
   entry points guarded by modalities and badges; `raw_mint`/`raw_burn` are unguarded.
 - **`Cep95` has no `mint`** — the public minting function is `raw_mint(to, token_id, metadata)`, and
-  it is deliberately unguarded. Add your own access control around it.
+  it is deliberately unguarded. Add your own access control around it. The `cep95` project
+  template (2.11) shows the pattern: an `Ownable` submodule, `mint` for the contract's owner, `burn`
+  for the token's owner. A project generated from the 2.10 template has `mint` and `burn` entry
+  points that anyone can call: guard them.
 - **`AccessControl` needs bootstrapping.** Nothing grants the first role, so a standalone deployment
   can never pass its own admin checks. The wrapping contract's `init` must call
   `unchecked_grant_role(&DEFAULT_ADMIN_ROLE, &self.env().caller())`.
@@ -219,6 +235,14 @@ obvious sense.
   `VmError::Other`. Run `cargo odra schema` after changing errors.
 - **`ODRA_CASPER_LIVENET_STATE_ROOT_HASH` (or `--state-root-hash`) refuses transactions** — it is a
   read-only view of the past; unset it to deploy.
+- **An external contract takes transactions only.** A contract known just by its
+  `#[odra::external_contract]` interface (a DEX router, someone else's token) can be called from the
+  CLI with mutating entry points, including payable ones (`router.with_tokens(amount).add_..()`).
+  Calling one of its getters fails with `No contract code registered for contract-package-…`, since
+  livenet getters run local code.
+- **An account that never received CSPR does not exist**: every CLI command panics with
+  `Couldn't get purse uref for address`. Fund it first.
+- **`cspr!(1)` is a `u64`** (motes). For a `U512` init argument write `cspr!(1).into()`.
 - **`ODRA_LOG_LEVEL=debug`** prints the full transaction JSON before it is sent — the fastest way to
   see what was actually signed — and every retried read.
 

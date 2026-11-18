@@ -35,7 +35,7 @@ a contract instead.
 cargo odra list-templates
 ```
 
-Use the output, not memory — the set changes between releases. As of Odra 2.10 it is:
+Use the output, not memory — the set changes between releases. As of Odra 2.11 it is:
 
 | Template    | Use when |
 | ---         | --- |
@@ -70,7 +70,7 @@ same flags.
 Other flags worth knowing:
 - `-s, --source` — pin the Odra version: a crates.io version, a git branch, a commit, or a local path
   (`-s ../odra`). Without it, `cargo odra` takes the version of the **latest GitHub release** of
-  `odradev/odra` (cargo-odra 0.2.0 reads the `releases/latest` redirect, so it no longer hits the
+  `odradev/odra` (cargo-odra 0.2.x reads the `releases/latest` redirect, so it no longer hits the
   rate-limited GitHub API).
 - `-r, --repo-uri` — a different template repository.
 
@@ -80,20 +80,18 @@ Other flags worth knowing:
 grep -m1 '^odra = ' my_project/Cargo.toml
 ```
 
-The plugin's bundled reference targets **Odra 2.10**. The GitHub release can lag the crates.io
-release by a few days, and then the default scaffold pins the previous version (and uses the older
-template layout: a bare `rust-toolchain` file, no `.env.sample`, no `AGENTS.md`). If the generated
-`odra` dependency is older than `2.10.0`, delete the directory and regenerate with the version
+The plugin's bundled reference targets **Odra 2.11**. The GitHub release can lag the crates.io
+release by a few days, and then the default scaffold pins the previous version. If the generated
+`odra` dependency is older than `2.11.0`, delete the directory and regenerate with the version
 pinned:
 
 ```bash
-cargo odra new --name my_project --template full -s 2.10.0
+cargo odra new --name my_project --template full -s 2.11.0
 ```
 
-With cargo-odra 0.2.0 this matters most for the `workspace` template: 0.2.0 writes the wasm only to
-the root `wasm/` directory, where Odra 2.10 looks and Odra 2.9 does not, so a workspace generated on
-2.9.1 fails `cargo odra test -b casper` with `Failed to find wasm file`. Pin `-s 2.10.0` for a
-workspace unless the default already resolved to 2.10.
+It matters: the `cep95` template of 2.10 ships `mint` and `burn` entry points anyone can call, and
+the web client generated for a 2.10 project hangs on reads of a mapping nobody has written to yet
+(`web-app` refuses to build it).
 
 ---
 
@@ -121,9 +119,8 @@ Point out what was generated and what each piece is for (the `full` template; `b
   struct (`<module>::<Struct>`, or `<crate>::<module>::<Struct>` in a workspace; since 2.10 the
   first segment may also be a dependency crate, e.g. `odra_modules::erc20::Erc20`). A contract
   missing from here still passes OdraVM tests but never produces a wasm file.
-- `bin/build_contract.rs`, `bin/build_schema.rs` — generated tooling; do not edit. One exception on
-  Odra 2.10: add `use <dependency>;` when building a contract from a dependency crate (the comment
-  inside says so). From 2.11 the `odra::link_contract_crates!();` line there does it.
+- `bin/build_contract.rs`, `bin/build_schema.rs` — generated tooling; do not edit. Their
+  `odra::link_contract_crates!();` line links the dependency crates `Odra.toml` lists contracts of.
 - `bin/cli.rs` — your deploy script and scenarios; this one *is* meant to be edited. It builds the
   `<project>_cli` binary: `cargo run --bin my_project_cli -- deploy`. **The template deploys with
   `load_or_deploy`, which installs a locked package that can never be upgraded.** If the contracts

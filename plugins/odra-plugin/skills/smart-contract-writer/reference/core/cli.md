@@ -12,7 +12,7 @@ brings the livenet backend with it, no `livenet` feature is needed):
 
 ```toml
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-odra-cli = { version = "2.10.0", default-features = false }
+odra-cli = { version = "2.11.0", default-features = false }
 
 [[bin]]
 name = "my_project_cli"
@@ -57,6 +57,23 @@ impl DeployScript for ContractsDeployScript {
     }
 }
 ```
+
+### Constructor arguments from the environment
+
+Values that differ between a test deployment and the real one (durations, prices) are read from
+environment variables with the production value as the default. Variables of the shell that runs
+the CLI are visible (`ROUND_DURATION_MS=300000 cargo run --bin my_project_cli -- deploy`):
+
+```rust
+fn env_or<T: std::str::FromStr>(name: &str, default: T) -> T {
+    std::env::var(name).ok().and_then(|v| v.parse().ok()).unwrap_or(default)
+}
+
+// in `deploy`:
+let round_duration = env_or("ROUND_DURATION_MS", 24 * 60 * 60 * 1000u64);
+```
+
+Log the values the script used (`odra_cli::log(format!(..))`): nothing else records them.
 
 ## cspr! Macro
 

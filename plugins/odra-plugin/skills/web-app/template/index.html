@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>__TITLE__</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- CSPR.click draws its wallet dialogs here. Keep it, and keep #root next to it. -->
+    <div id="csprclick-ui"></div>
+    <div id="root">
+      <header>
+        <h1>__TITLE__</h1>
+        <div class="account">
+          <span id="network" class="tag"></span>
+          <a id="account" target="_blank" rel="noopener noreferrer"></a>
+          <button id="connect">Connect wallet</button>
+          <button id="disconnect" class="quiet" hidden>Disconnect</button>
+        </div>
+      </header>
+
+      <main>
+        <!-- The page of the dapp goes here: one .card per thing the user can see or do. -->
+        <section class="card">
+          <p class="label">Contract</p>
+          <p id="summary">…</p>
+        </section>
+
+        <p id="status" role="status"></p>
+      </main>
+
+      <footer>
+        Contract: <a id="contract-link" target="_blank" rel="noopener noreferrer"></a>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

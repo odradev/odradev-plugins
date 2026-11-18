@@ -12,7 +12,7 @@ The `odra-modules` crate provides battle-tested implementations of common patter
 
 ```toml
 [dependencies]
-odra-modules = { version = "2.10.0", default-features = false }
+odra-modules = { version = "2.11.0", default-features = false }
 ```
 
 ## Composing modules with `SubModule<T>`
@@ -84,7 +84,7 @@ The `odra-modules` crate ships ready-to-use modules. Embed them via
 
 | Module | Description |
 |---|---|
-| `Ownable` | Single-owner access control: `get_owner()`, `transfer_ownership()`, `renounce_ownership()`, and `assert_owner(&addr)` as the guard. `unchecked_transfer_ownership` is a plain method. |
+| `Ownable` | Single-owner access control: `init(owner: Address)` (call it from the contract's `init`), `get_owner() -> Address` (reverts when there is none), `get_optional_owner()`, `transfer_ownership(&Address)`, `renounce_ownership()`, and `assert_owner(&Address)` as the guard. `unchecked_transfer_ownership` is a plain method. Do not delegate `renounce_ownership` in a contract that pays or asks its owner. |
 | `Ownable2Step` | Two-step ownership transfer. |
 | `AccessControl` | Role-based access control: `has_role`, `grant_role`, `revoke_role`, `check_role(&role, &addr)` as the guard. Bootstrap the first admin with `unchecked_grant_role(&DEFAULT_ADMIN_ROLE, ..)` in `init`. |
 
@@ -146,10 +146,10 @@ pub struct OwnedToken {
 }
 ```
 
-## Building a module's wasm from your project (2.10)
+## Building a module's wasm from your project
 
 A contract from `odra-modules` (or any dependency crate) can be built and deployed from your project
-without a wrapper, with cargo-odra 0.2.0:
+without a wrapper:
 
 ```toml
 [[contracts]]
@@ -158,16 +158,13 @@ fqn = "odra_modules::erc20::Erc20"
 
 The dependency has to be linked into both build binaries, or the wasm has no entry points:
 
-- **Odra 2.11+:** `bin/build_contract.rs` and `bin/build_schema.rs` of a generated project contain
-  `odra::link_contract_crates!();`, which links every dependency `Odra.toml` lists a contract of.
-  Nothing to edit. Add that line to a project generated for an older Odra. An optional or
-  `[target.*]` dependency still needs its own `use`.
-- **Odra 2.10:** add `use odra_modules;` to both files, next to the existing `use` line.
+`bin/build_contract.rs` and `bin/build_schema.rs` of a generated project contain
+`odra::link_contract_crates!();`, which links every dependency `Odra.toml` lists a contract of.
+Nothing to edit. A project generated for Odra 2.10 lacks the line: add it, or a `use odra_modules;`,
+to both files. An optional or `[target.*]` dependency still needs its own `use`.
 
 `cargo odra build -c Erc20` then writes `wasm/Erc20.wasm` and the schema next to your own contracts.
-With cargo-odra 0.2.1 the build fails with an error naming the crate if it was not linked; 0.2.0
-only searches the sources for the crate's name, so a mention in a comment passes and the wasm is
-saved without entry points.
+The build fails with an error naming the crate if it was not linked.
 
 ## Testing modules
 
