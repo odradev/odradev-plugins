@@ -31,6 +31,32 @@ SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$PWD"
 MARKER="odra-plugin:testnet-redirect"
 
+SLUG="$(printf '%s' "$ORIGIN" | sed -nE 's#^(git@github\.com:|ssh://git@github\.com/|https://github\.com/)([^/]+/[^/]+)$#\2#p' | sed 's/\.git$//')"
+
+# 0. Is the app id registered for the address the site will have, and for this network?
+# CSPR.click answers the page's own request for the application only from a registered origin.
+if [ -n "$SLUG" ]; then
+  SITE_ORIGIN="$(gh api "repos/$SLUG/pages" -q .html_url 2>/dev/null | sed -E 's#^(https?://[^/]+).*#\1#' || true)"
+  [ -n "$SITE_ORIGIN" ] || SITE_ORIGIN="https://$(printf '%s' "${SLUG%%/*}" | tr '[:upper:]' '[:lower:]').github.io"
+  APP_JSON="$(curl -sS -m 20 -H "Origin: $SITE_ORIGIN" "https://accounts.cspr.click/api/application/$APP_ID.json" 2>/dev/null || true)"
+  case "$APP_JSON" in
+    *'"wrong application id"'*)
+      echo "Error: CSPR.click does not know the app id $APP_ID. Copy it again from https://console.cspr.build." >&2; exit 1 ;;
+    *'"wrong origin'*)
+      echo "Error: the app id $APP_ID is not registered for $SITE_ORIGIN." >&2
+      echo "In https://console.cspr.build open the application and add exactly $SITE_ORIGIN (no path) to its allowed origins, then run this again." >&2
+      exit 1 ;;
+    *'"chain_name"'*)
+      APP_CHAIN="$(printf '%s' "$APP_JSON" | sed -nE 's/.*"chain_name": *"([^"]*)".*/\1/p')"
+      if [ "$APP_CHAIN" != "$CHAIN" ]; then
+        echo "Error: the app id $APP_ID is set to the network $APP_CHAIN in console.cspr.build; the $NETWORK page needs one set to $CHAIN." >&2
+        exit 1
+      fi
+      echo "CSPR.click app id: registered for $SITE_ORIGIN on $CHAIN." >&2 ;;
+    *) echo "Warning: could not check the app id with CSPR.click; the wallet connection is unverified." >&2 ;;
+  esac
+fi
+
 # 1. Build.
 "$SCRIPTS/../../web-app/scripts/sync-contracts.sh" "$WEB_DIR"
 ( cd "$WEB_DIR"
@@ -69,13 +95,14 @@ else
 fi
 
 # 3. Turn GitHub Pages on and wait until the site is served.
-SLUG="$(printf '%s' "$ORIGIN" | sed -nE 's#^(git@github\.com:|ssh://git@github\.com/|https://github\.com/)([^/]+/[^/]+)$#\2#p' | sed 's/\.git$//')"
 if [ -z "$SLUG" ]; then
   echo "origin is not a GitHub repository: serve the gh-pages branch with your host's static hosting." >&2
   exit 0
 fi
+# GitHub may turn Pages on by itself when a gh-pages branch appears; then the request answers 409.
 if ! gh api "repos/$SLUG/pages" >/dev/null 2>&1; then
-  if ! OUT="$(gh api -X POST "repos/$SLUG/pages" -f 'source[branch]=gh-pages' -f 'source[path]=/' 2>&1)"; then
+  if ! OUT="$(gh api -X POST "repos/$SLUG/pages" -f 'source[branch]=gh-pages' -f 'source[path]=/' 2>&1)" \
+     && ! printf '%s' "$OUT" | grep -q '"status":"409"'; then
     echo "Error: GitHub Pages could not be turned on for $SLUG:" >&2; echo "$OUT" >&2
     echo "A private repository needs a paid GitHub plan for Pages; make the repository public or use another host." >&2
     exit 1

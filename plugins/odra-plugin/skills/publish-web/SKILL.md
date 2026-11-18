@@ -58,12 +58,17 @@ The development id in the template works on `localhost` only; a published page n
 wallets do not connect. Give the user these steps and wait for the id:
 
 1. Open <https://console.cspr.build> and sign up (free).
-2. Create a CSPR.click application for this project. Where the console asks for the site's
-   address, it is the one from Step 2.
-3. Copy the application id and paste it here.
+2. Create a CSPR.click application for this project, for the network being published (Testnet
+   first).
+3. Register the site's **origin** for it: `https://<owner>.github.io` — scheme and host only, no
+   path. An id answers only pages served from a registered origin (and from `localhost`).
+4. Copy the application id and paste it here. Only the id: an API key shown next to it is a
+   secret of their account, is not needed for the page and must not be pasted or committed.
 
 The id is not a secret — it ships in the page. Keep it in `GUIDE.md` so the next publish has it.
-Use the same id for the testnet and the mainnet build unless the console issues one per network.
+An application is set to one network, so the mainnet page needs a second application (or the
+first one switched), registered for the same origin. `publish-pages.sh` checks all of this before
+it builds and says which part is wrong.
 
 ## Step 4 — Publish
 
@@ -91,9 +96,7 @@ addresses). The first publish of a repository can take a few minutes to appear.
    `resources/casper-test-contracts.toml`.
 2. **You, if you can drive a browser:** the page shows contract state without a wallet.
 3. **The user:** opens the address, connects Casper Wallet (set to Testnet for the testnet page)
-   and performs one action. Only this proves the app id — you cannot approve it for them. If the
-   sign-in dialog does not open or reports an unknown application, the id or the address
-   registered for it in the console is wrong.
+   and performs one action. Only this proves the whole path — you cannot approve it for them.
 
 Report which of the three were done.
 
@@ -109,10 +112,12 @@ and the app id to `GUIDE.md`.
 
 | Message | Cause |
 | --- | --- |
+| `the app id ... is not registered for https://...` | Step 3.3: the origin is missing in the console, or has a path or a typo |
+| `the app id ... is set to the network ...` | the application belongs to the other network: create one for this network |
 | `GitHub Pages could not be turned on` | the repository is private on a free plan, or `gh` lacks rights to it |
 | `does not serve this build after 3 minutes` | Pages is still building (first publish), or the build failed: `gh api repos/<owner>/<repo>/pages/builds/latest` |
 | the page loads, state does not | the reader account is not funded on that network, or the client was not rebuilt — the table in `web-app` |
-| state loads, the wallet does not connect | the app id (Step 3) |
+| state loads, **Connect wallet** does nothing, the console shows a `TypeError` from `csprclick-sdk` | the page was built with an id not registered for this origin (the request to `accounts.cspr.click/api/application/<id>.json` answers 401) — Step 3, then publish again |
 | a blank page at the address | the site was built without the template's `base: "./"` in `vite.config.ts` |
 
 ## Other hosts
