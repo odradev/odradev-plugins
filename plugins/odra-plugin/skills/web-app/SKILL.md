@@ -106,12 +106,11 @@ In `main.ts`:
   from the connected account with `account.address`, numbers with `U256.fromBigInt(1n)`. An
   address reads `entity-account-<hex>` or `hash-<hex>`; link it with `addressUrl()` from
   `network.ts`, and compare it with `currentAccount()?.address.value` to mark "you".
-- **A getter that reverts rejects its promise.** Where "not there" is an expected answer — a
-  getter of your own that reverts for an unknown id — wrap the read:
-  `await readOr(undefined, () => contract.auction(id))`. The getters of `Cep18` and `Cep95` do not
-  revert (`ownerOf` → `undefined`, `balanceOf` → zero, `tokenMetadata` → empty) and need no
-  wrapper, also before anything was written. Do not wrap everything: `readOr` hides a network
-  failure as well.
+- **A getter that reverts rejects its promise.** Where "not there" is an expected answer, wrap
+  the read: `await readOr([], () => contract.tokenMetadata(id))`. Of the `Cep95` getters,
+  `tokenMetadata` and `approvedFor` revert for a token that does not exist (`User(40005)`);
+  `ownerOf` answers `undefined` and `balanceOf` zero, also before anything was minted, and need no
+  wrapper. Do not wrap everything: `readOr` hides a network failure as well.
 - Reads are slow (about a second each, one network round trip per getter). Read what the page
   shows, not everything the contract has; refresh on a timer of tens of seconds, not every second.
 - **Writes** go through `transact(() => send(<gas in CSPR>, () => contract.<entryPoint>(args)))`.

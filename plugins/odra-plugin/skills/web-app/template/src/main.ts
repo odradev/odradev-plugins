@@ -28,7 +28,7 @@ async function refresh() {
   prepareRead();
   // Read entry points here, one `await contract.<getter>()` each, and put the values on the page.
   // A getter that reverts when the thing is not there goes through readOr() from ./casper:
-  //   const auction = await readOr(undefined, () => contract.auction(id));
+  //   const metadata = await readOr([], () => contract.tokenMetadata(id));
   $("summary").textContent = "Connected to the contract.";
 }
 
