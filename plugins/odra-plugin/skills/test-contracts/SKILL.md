@@ -1,10 +1,12 @@
 ---
 name: test-contracts
 description: >
-  Run unit and integration test on in-memory OdraVM or (and) real WASMs on CasperVM
-  and report results.
-  Use when the user says "test contract", "verify contract(s)", "unit test".
-allowed-tools: Bash(cargo odra *), Read, AskUserQuestion, WebFetch
+  Run the tests of an Odra project — scenarios (BDD, `tests/features/`) and unit tests — on
+  in-memory OdraVM or (and) real WASMs on CasperVM and report results; add scenario tests to a
+  project that has none.
+  Use when the user says "test contract", "verify contract(s)", "unit test", "run the scenarios",
+  "BDD", "cucumber", "feature file", or "add scenario tests".
+allowed-tools: Bash(cargo odra *), Bash(cargo test *), Bash(${CLAUDE_SKILL_DIR}/scripts/*), Bash(ls *), Read, AskUserQuestion, WebFetch
 ---
 
 Use `AskUserQuestion` tool to verify the user intent if not explicitly expressed:
@@ -59,6 +61,40 @@ Give these commands a long timeout (10 minutes): on a cold cache `cargo odra tes
 minutes each; later runs take seconds.
 
 If tests fail, help the user fix the issues. Explain any errors in context.
+
+## Scenario tests (BDD)
+
+A project made with this plugin states the rules of its contracts as scenarios —
+`tests/features/*.feature`, plain sentences such as `When Alice bids 10 CSPR` — and
+`cargo odra test` runs them after the unit tests, on the backend it selects. How to write them:
+[`bdd.md`](../smart-contract-writer/reference/bdd.md).
+
+**A project without `tests/bdd.rs`** gets them with (Odra 2.11+):
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/add-bdd.sh              # single crate: from the project root
+${CLAUDE_SKILL_DIR}/scripts/add-bdd.sh <crate-dir>  # workspace: the contract crate
+```
+
+It adds `tests/` (runner, world, common steps, a sample feature), the dev-dependencies `odra-bdd`
+and `cucumber`, and the `bdd` test target, and touches nothing else. Existing `#[test]`s keep
+running; move the ones that state a rule of the product into scenarios when that code is next
+changed, not as a rewrite for its own sake. If the user wants plain Rust tests, leave it out.
+
+```bash
+cargo test --test bdd                        # only the scenarios (OdraVM)
+cargo test --test bdd -- "highest bidder"    # scenarios whose name, or feature name, contains the text
+ODRA_BACKEND=casper cargo test --test bdd    # only the scenarios on CasperVM, after `cargo odra build`
+```
+
+Reading the output: `✔` per sentence; a failing one shows the sentence, its line in the feature
+file, the step function and the panic message. `Step doesn't match any function` is a sentence
+with no step (often a typo in the feature file), `Step match is ambiguous` two steps that fit one
+sentence — both fail the run. `0 scenarios` after `cargo odra test -- <filter>` is normal: the
+filter is applied to scenario names as well, and matched a unit test only.
+
+When reporting results, list the scenario names that passed: they are the rules the contract is
+shown to keep, in words the user can check.
 
 ## Things worth knowing (Odra 2.11)
 
