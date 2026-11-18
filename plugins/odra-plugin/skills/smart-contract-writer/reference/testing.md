@@ -1,5 +1,10 @@
 # Odra Testing Guide
 
+The rules of a contract are tested as scenarios in `tests/features/` — see [`bdd.md`](./bdd.md).
+This file is the test API underneath: what a step calls through `world.env()` and the contract's
+`HostRef`, and what a Rust `#[test]` uses for the things that are not scenarios (`gas_costs`,
+upgrades).
+
 ## Three Backends
 
 ### OdraVM (default — use for unit tests)

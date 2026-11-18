@@ -14,7 +14,8 @@ testnet with a wallet-connected web app, with no blockchain knowledge required f
 bidder gets the NFT, everyone else gets their CSPR back, and a new auction starts each day.
 ```
 
-The plugin writes and tests the contracts, walks you through creating an account and getting test
+The plugin writes the contracts and tests them with scenarios you can read
+(`When Alice bids 10 CSPR` / `Then Bob owns NFT 0`), walks you through creating an account and getting test
 CSPR, deploys to testnet, builds the web app (CSPR.click wallet connection), makes tokens tradable
 on CSPR.trade, explains what it did along the way and leaves a `GUIDE.md` covering how to test the
 app and take it to mainnet. Each step is also a skill of its own, and experienced Odra developers
@@ -123,7 +124,7 @@ plugins/
       list-token/            # CSPR.trade pool for a CEP-18 token; NFT visibility
       go-mainnet/            # Readiness review, costs and the mainnet launch
       smart-contract-writer/ # Write and fix contracts (+ reference/: contract model, CLI, testing, factory, dapp, ...)
-      test-contracts/        # Run tests on OdraVM and/or CasperVM
+      test-contracts/        # Run scenarios (BDD) and unit tests on OdraVM and/or CasperVM; add-bdd.sh
 README.md
 ```
 

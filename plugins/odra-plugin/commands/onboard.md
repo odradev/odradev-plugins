@@ -79,6 +79,8 @@ After generation, walk through the generated code and explain:
 >
 > `odra_test::env()` creates a test environment. `ModuleName::deploy(&env, args)` deploys your contract into this environment. Then you call methods on the returned `HostRef` just like regular Rust method calls. A method that reverts panics the test; its `try_` twin returns a `Result` you can assert on.
 >
+> Rules of a contract are best written as **scenarios** — `tests/features/*.feature`, plain sentences like `When Alice flips the switch` / `Then the switch is on` — with a small Rust function behind each sentence. Anyone can read them, and they are what this plugin writes by default; a Rust `#[test]` like the one in the sample contract is for technical checks.
+>
 > The same tests run unchanged on the real Casper execution engine with `cargo odra test -b casper`, and `env.take_snapshot()` / `env.restore_snapshot()` let several scenarios branch off one expensive setup.
 
 ### 4b — Run the tests
@@ -148,7 +150,7 @@ Invoke `/odra-plugin:deploy-to-livenet` targeting nctl.
 > - `/odra-plugin:list-token` — make a token tradable on CSPR.trade
 > - `/odra-plugin:go-mainnet` — the checklist and steps for launching for real
 > - `/odra-plugin:setup-nctl` — set up a local node for testing and development
-> - `/odra-plugin:test-contracts` — run tests on OdraVM or/and CasperVM
+> - `/odra-plugin:test-contracts` — run the scenarios and unit tests on OdraVM or/and CasperVM
 > - Instruct me to write code, fix bugs, or add features to your contracts - a specialized agent will handle it.
 >
 > Run any skill directly — no guided mode needed. You're ready.
