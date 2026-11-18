@@ -110,10 +110,10 @@ if ! gh api "repos/$SLUG/pages" >/dev/null 2>&1; then
 fi
 SITE="$(gh api "repos/$SLUG/pages" -q .html_url)"; SITE="${SITE%/}"
 [ "$NETWORK" = testnet ] && PAGE="$SITE/testnet/" || PAGE="$SITE/"
-WANT="$(grep -o '"package_hash": *"[^"]*"' "$DIST/contracts.$CHAIN.json" | head -n1 | sed 's/.*"\(hash-[^"]*\)"/\1/')"
 echo "Waiting for GitHub to serve $PAGE ..." >&2
 for _ in $(seq 1 36); do
-  if curl -fsS "${PAGE}contracts.$CHAIN.json?$(date +%s)" 2>/dev/null | grep -q "${WANT:-package_hash}"; then
+  # index.html names the hashed script and wasm files, so serving the same one means this build.
+  if curl -fsS "${PAGE}index.html?$(date +%s)" 2>/dev/null | cmp -s - "$DIST/index.html"; then
     echo "$PAGE"; exit 0
   fi
   sleep 5
