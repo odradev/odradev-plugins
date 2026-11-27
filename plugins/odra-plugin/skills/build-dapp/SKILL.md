@@ -113,16 +113,17 @@ page (`web/`).
 
 Invoke `smart-contract-writer` with the specification from Phase 1 (it will not need to ask again).
 In this flow you run the commands yourself (`cargo odra test`, `cargo odra schema`) instead of
-asking the user, you may write a new contract together with its tests rather than test-first, and
+asking the user, you may write a new contract together with its scenarios rather than test-first, and
 its "Output Format" section does not apply — the code goes into the project, the explanation to
 the user comes in plain words. Read its core references and `gotchas.md` once, plus `cep95.md`
-or `cep18.md` for the token, `events.md`, `errors.md` and `testing.md`; nothing else is needed for
-a typical contract. Requirements to pass on:
+or `cep18.md` for the token, `events.md`, `errors.md`, `bdd.md` and `testing.md`; nothing else is
+needed for a typical contract. Requirements to pass on:
 
-- a test for every rule in the specification, including the unhappy paths (too low, too late, not
-  allowed) and **the money**: assert balances before and after, and that the contract holds zero
-  when everything is settled;
-- time-based rules tested with `env.advance_block_time`;
+- the rules as **scenarios** in `tests/features/` (`bdd.md`), written in the words of the
+  specification from Phase 1: one scenario for every rule, including the unhappy paths (too low,
+  too late, not allowed) and **the money** — what each actor and the contract hold before and
+  after, and that the contract holds zero when everything is settled;
+- time-based rules as `When 1 day passes` steps;
 - read-only entry points for everything the page will show (current state, deadlines, prices,
   owners) — the web app can only display what a getter returns;
 - an event for every state change;
@@ -131,14 +132,16 @@ a typical contract. Requirements to pass on:
   deploy script in `bin/cli.rs` updated; deployment upgradable; constructor arguments for durations
   and prices read from environment variables with production defaults (pattern in `cli.md`);
 - a `gas_costs` test that runs one of each transaction and prints `env.gas_report()` (see
-  `testing.md`);
+  `testing.md`) — a Rust `#[test]` in the contract's module, not a scenario;
 - no unguarded `mint`/`burn` left over from a template.
 
 Then `/odra-plugin:test-contracts` on **both** backends (`cargo odra test`, then
 `cargo odra test -b casper`). Do not go on with a failing test.
 
-Tell the user what the tests cover, as a list of the rules from their specification — this is their
-evidence that the contract does what they asked.
+Tell the user what the tests cover by showing them the scenarios: the names as a list, and one
+feature file in full — it reads as their own rules, and it is their evidence that the contract does
+what they asked. Ask whether any rule is missing or says something they did not mean; correcting a
+sentence now is cheaper than correcting a deployed contract.
 
 ## Phase 4 — Account and testnet deployment
 
@@ -192,7 +195,8 @@ and commands, not a generic tutorial:
 3. **Try it** — the public testnet address and how to start the web app locally; the wallet
    setup; a script of actions to perform and what to expect after each; where to see it on the
    explorer.
-4. **Change it** — how to run the tests, redeploy or upgrade, regenerate the client, publish the
+4. **Change it** — where the rules are written down (`tests/features/`, readable without knowing
+   Rust), how to run the tests, redeploy or upgrade, regenerate the client, publish the
    page again (with the CSPR.click app id).
 5. **Accounts and keys** — which key files exist, what each is for (deployer, reader), which are
    secret, what must be backed up.

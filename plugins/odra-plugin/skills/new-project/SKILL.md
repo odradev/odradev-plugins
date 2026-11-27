@@ -5,7 +5,7 @@ description: >
   empty directory with `cargo odra init`. Use when the user says "new odra
   project", "create a project", "start a project", "scaffold", "set up odra",
   "init odra", or asks for a contract when no Odra project exists yet.
-allowed-tools: Bash(cargo odra *), Bash(ls *), Bash(cat *), Bash(grep *), Read, Edit, AskUserQuestion, WebFetch
+allowed-tools: Bash(cargo odra *), Bash(${CLAUDE_SKILL_DIR}/../test-contracts/scripts/*), Bash(ls *), Bash(cat *), Bash(grep *), Read, Edit, AskUserQuestion, WebFetch
 ---
 
 # Create a new Odra project
@@ -109,12 +109,32 @@ install whatever it names. Do not start editing the generated code to make a fai
 
 ---
 
-## Step 5 — Orient the user
+## Step 5 — Add scenario tests
+
+By default a project made with this plugin tests its contracts with scenarios people can read
+(BDD: `When Alice bids 10 CSPR` / `Then Bob owns NFT 0`). The templates do not ship them, so add
+them now:
+
+```bash
+${CLAUDE_SKILL_DIR}/../test-contracts/scripts/add-bdd.sh              # single crate, from the project root
+${CLAUDE_SKILL_DIR}/../test-contracts/scripts/add-bdd.sh <crate-dir>  # workspace: each contract crate
+cargo odra test                                                       # the sample feature passes
+```
+
+Skip it only if the user asked for plain Rust tests. How scenarios are written:
+[`bdd.md`](../smart-contract-writer/reference/bdd.md).
+
+---
+
+## Step 6 — Orient the user
 
 Point out what was generated and what each piece is for (the `full` template; `blank`, `cep18` and
 `cep95` have the same layout):
 
 - `src/` — your contracts. Every new module needs `pub mod <name>;` in `src/lib.rs`.
+- `tests/features/` — the scenarios: what the contracts must do, in plain sentences. `tests/steps/`
+  and `tests/common/` turn the sentences into calls. The template's sample contract still has a
+  Rust `#[test]` in `src/`; new rules go into scenarios.
 - `Odra.toml` — the list of contracts to build to wasm. Each entry's `fqn` is the Rust path to the
   struct (`<module>::<Struct>`, or `<crate>::<module>::<Struct>` in a workspace; since 2.10 the
   first segment may also be a dependency crate, e.g. `odra_modules::erc20::Erc20`). A contract

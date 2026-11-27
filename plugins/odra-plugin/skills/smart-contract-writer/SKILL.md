@@ -3,11 +3,11 @@ name: "smart-contract-writer"
 description: >
   Implement, modify, and fix Odra smart contracts for the Casper blockchain.
   Covers writing new contracts, adding or changing entry points, defining storage
-  and events, composing modules, writing inline tests, wiring up Odra.toml
+  and events, composing modules, writing scenario (BDD) tests, wiring up Odra.toml
   registrations, and setting up CLI deploy scenarios.
   Use when the user says "implement contract", "write contract", "add entry point",
   "fix contract", "build contract", "add event", "add error", "add storage",
-  "compose modules", "wire up CLI", or "write test".
+  "compose modules", "wire up CLI", "write test", "write a scenario", or "BDD".
 allowed-tools: Edit, Read, Write, LSP, WebFetch
 ---
 
@@ -74,7 +74,8 @@ Based on the task, read the relevant reference files before writing code:
 | CEP-95, NFTs, non-fungible tokens                         | [`cep95.md`](./reference/cep95.md)                   |
 | Defining or emitting events                                       | [`events.md`](./reference/events.md)                 |
 | Error enums, reverting, `unwrap_or_revert`                        | [`errors.md`](./reference/errors.md)                 |
-| Writing or fixing tests                                           | [`testing.md`](./reference/testing.md)               |
+| Writing or fixing tests — scenarios in `tests/features/`          | [`bdd.md`](./reference/bdd.md)                       |
+| The test API behind the steps; Rust `#[test]`s (gas, upgrades)    | [`testing.md`](./reference/testing.md)               |
 | Factory, factory pattern, upgrading child contracts               | [`factory.md`](./reference/factory.md)               |
 | Dapp registry, grouping the contracts of one dapp                 | [`dapp.md`](./reference/dapp.md)                     |
 | Offchain reads, call stack, debug output, ref helpers             | [`contract-model.md`](./reference/core/contract-model.md) |
@@ -107,6 +108,7 @@ documentation itself is silent. Do not guess an API you can look up in one `WebF
 - Register errors in the module attribute: `#[odra::module(errors = Error)]`
 - Error discriminants must be unique across the project
 - Events are emitted for all state-changing operations.
+- Every rule of the specification has a scenario in `tests/features/`, the refusals included.
 - Use `NoArgs` for contracts without a constructor
 - Use `self.env()` for on-chain context, never global state
 - All public entry points have proper access control if needed.
@@ -131,8 +133,14 @@ documentation itself is silent. Do not guess an API you can look up in one `WebF
 Follow this process for every implementation task:
 
 1. **Understand the codebase** — read existing contracts in `src/` (`<crate>/src/` in a workspace), `Odra.toml`, and `bin/cli.rs` (`cli/cli.rs` in a workspace) to understand what exists; check the `odra` version in `Cargo.toml`
-2. **Write a failing test first** — in the contract's `#[cfg(test)] mod tests` block. (A whole
-   new contract with a complete specification may be written together with its tests.)
+2. **Write a failing test first, as a scenario** — a `Scenario` in `tests/features/<area>.feature`
+   in the user's own words, plus the steps it needs in `tests/steps/` ([`bdd.md`](./reference/bdd.md)).
+   This is the default: the rules of a contract are tested as scenarios people can read. If the
+   project has no `tests/bdd.rs`, ask for `test-contracts/scripts/add-bdd.sh` to be run (this skill
+   has no Bash) — do not write the wiring by hand. A Rust `#[test]` in the contract's
+   `#[cfg(test)] mod tests` is for what is not a rule of the product (`gas_costs`, an upgrade's
+   migration, an internal helper), and for a project whose user asked for plain Rust tests.
+   (A whole new contract with a complete specification may be written together with its tests.)
 3. **Run the test to confirm it fails** — `cargo odra test`
 4. **Implement the minimal code to pass** — follow patterns from the context docs
 5. **Run tests to confirm they pass** — `cargo odra test`
@@ -158,6 +166,6 @@ structure:
 1. **Contract Overview**: Brief description of what the contract does and its key components.
 2. **`src/<module>.rs`** (and the `pub mod` line in `src/lib.rs`): Complete, compilable Rust code with the Odra contract.
 3. **`Cargo.toml`**: Required dependencies with versions from the documentation.
-4. **Tests**: Inline tests or a separate test module.
+4. **Tests**: the feature files and their steps.
 5. **Usage Notes**: Key entry points, deployment instructions, or important caveats.
 
