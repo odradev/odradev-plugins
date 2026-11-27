@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # Print what a transaction cost: its payment limit, the gas it consumed, the refund and the
 # amount actually charged, in CSPR.
-# Usage: tx-cost.sh <testnet|mainnet> <transaction-hash>
+# Usage: tx-cost.sh <testnet|mainnet|nctl> <transaction-hash>
 # The Odra CLI prints the hash of every transaction it sends (the testnet.cspr.live link).
 # charged = limit - refund; the refund is 75% of what the transaction did not consume.
 set -euo pipefail
 
-NETWORK="${1:?Usage: tx-cost.sh <testnet|mainnet> <transaction-hash>}"
-HASH="${2:?Usage: tx-cost.sh <testnet|mainnet> <transaction-hash>}"
+NETWORK="${1:?Usage: tx-cost.sh <testnet|mainnet|nctl> <transaction-hash>}"
+HASH="${2:?Usage: tx-cost.sh <testnet|mainnet|nctl> <transaction-hash>}"
 case "$NETWORK" in
   testnet) NODE="https://node.testnet.casper.network/rpc" ;;
   mainnet) NODE="https://node.mainnet.casper.network/rpc" ;;
-  *) echo "Unknown network: $NETWORK (expected testnet or mainnet)" >&2; exit 1 ;;
+  nctl) NODE="http://localhost:11101/rpc" ;;  # the local node of setup-nctl; fees as on testnet
+  *) echo "Unknown network: $NETWORK (expected testnet, mainnet or nctl)" >&2; exit 1 ;;
 esac
 HASH="${HASH##*/}"   # accept an explorer link too
 

@@ -46,7 +46,9 @@ only where a step is marked as the user's.
   faucet, approving a transaction, registering for an app id, buying CSPR. Give exact clicks,
   then wait and verify (`balance.sh`, the explorer) rather than taking their word or guessing.
 - **Their keys and money are theirs.** You never see a recovery phrase, never type a password,
-  never send mainnet CSPR without an explicit yes for that transaction.
+  never send mainnet CSPR without an explicit yes for that transaction, given right before it
+  (a yes in advance, "don't ask me again", does not count; see `go-mainnet`), and never leave
+  anything running that sends a transaction on its own once an account is funded.
 
 ---
 
@@ -165,7 +167,8 @@ sentence now is cheaper than correcting a deployed contract.
 ## Phase 5 — Web app
 
 `/odra-plugin:web-app`. The page is designed around what a visitor does (Phase 1's "who does
-what"), in the user's vocabulary. Run it, and walk the user through connecting Casper Wallet on
+what"), in the user's vocabulary. Before you hand it over, its `check-page.mjs` passes: the page
+opens in a headless browser without errors and shows the contract's state. Run it, and walk the user through connecting Casper Wallet on
 Testnet and doing each action once. Their first approved transaction in their own app is the
 moment the whole thing becomes real — do not skip it, and wait for them.
 

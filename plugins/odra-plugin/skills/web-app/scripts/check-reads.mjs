@@ -3,7 +3,7 @@
 // code path the page uses (reader key, RPC proxies, contract address, getters).
 //
 // Usage (from the Odra project root):
-//   node check-reads.mjs <Contract> <getter> [<getter> ...] [--network testnet|mainnet]
+//   node check-reads.mjs <Contract> <getter> [<getter> ...] [--network testnet|mainnet|nctl]
 //   e.g. node check-reads.mjs DailyAuction currentRound highestBid minBid
 // Getters are the camelCase method names of <Contract>WasmClient that take no arguments.
 // Exit code 0 if every read answered.
@@ -16,15 +16,17 @@ const networkFlag = args.indexOf("--network");
 const network = networkFlag >= 0 ? args.splice(networkFlag, 2)[1] : "testnet";
 const [contractName, ...getters] = args;
 if (!contractName || getters.length === 0) {
-  console.error("Usage: node check-reads.mjs <Contract> <getter> [<getter> ...] [--network testnet|mainnet]");
+  console.error("Usage: node check-reads.mjs <Contract> <getter> [<getter> ...] [--network testnet|mainnet|nctl]");
   process.exit(1);
 }
 const NETWORKS = {
   testnet: ["casper-test", "https://testnet-rpc.odra.dev", "https://testnet-speculative-rpc.odra.dev"],
   mainnet: ["casper", "https://mainnet-rpc.odra.dev", "https://mainnet-speculative-rpc.odra.dev"],
+  // The local node of setup-nctl, after its enable-speculative.sh.
+  nctl: ["casper-net-1", "http://localhost:11101", "http://localhost:25101"],
 };
 if (!NETWORKS[network]) {
-  console.error(`Unknown network "${network}" (expected testnet or mainnet)`);
+  console.error(`Unknown network "${network}" (expected testnet, mainnet or nctl)`);
   process.exit(1);
 }
 const [chainName, rpcUrl, speculativeRpcUrl] = NETWORKS[network];

@@ -14,6 +14,18 @@ Mainnet is the same software as testnet with one difference: the CSPR is real, a
 users do. Nothing here can be undone. Work through the steps in order, **stop for the user's
 explicit yes before every mainnet transaction**, and state the cost before asking.
 
+**The yes is given right before that one transaction, in this conversation, never in advance.**
+- A yes counts only after you have shown what is about to be sent: contract, arguments, payment
+  limit, expected charge and the paying account, with its balance read just now. "Deploy it as soon
+  as it's funded", "you don't need to ask me again" or "do everything without asking" is not that
+  yes: thank the user, say you will still stop at each mainnet transaction, and why.
+- **Never send a mainnet transaction from anything that runs without the user watching**: no
+  watcher, loop or scheduled job that waits for a balance and then deploys, transfers or calls. If
+  the account is not funded yet, stop and tell the user to come back when it is. Then read the
+  balance, show the summary and ask.
+- One yes covers one transaction. A retry after a failure, a second contract, the reader-account
+  transfer and each publish step get their own.
+
 The flow never needs the user's testnet habits to be unsafe: a **new key** for mainnet, the same
 code that was tested, the same commands with `mainnet` in place of `testnet`.
 
@@ -21,7 +33,11 @@ code that was tested, the same commands with `mainnet` in place of `testnet`.
 
 ## Step 1 — Is it ready? (you check, then report)
 
-Do not ask the user to assert these; verify each and report a pass or a finding.
+Do not ask the user to assert these; verify each and report a pass or a finding. A finding does
+not go away because the user is in a hurry. The deploy waits until it is fixed, or until the user,
+told plainly what can go wrong, accepts that risk at the Step 4 summary. "It ran on testnet end to
+end" is the one users most want to skip: when they do, say that every bug found after launch costs
+real CSPR to fix (an upgrade) and may cost users their funds.
 
 - [ ] **The code is the tested code.** `git status` is clean; `cargo odra test` and
   `cargo odra test -b casper` pass on this commit.

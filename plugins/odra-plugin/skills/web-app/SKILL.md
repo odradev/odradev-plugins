@@ -33,6 +33,13 @@ requests), deploy with `deploy.sh nctl`, fund the reader account there, and star
 `VITE_NETWORK=nctl npm run dev`. Useful for building the page before the user has test CSPR; the
 wallet flow still has to be checked on testnet.
 
+On NCTL, test the writes with the project's CLI (`deploy.sh nctl <entry point> ...`). Then check
+that the page shows the new state after its next refresh: that proves the reads and the rendering
+of every action. **Do not build a signer into the page or the dev server** to make the buttons
+work on NCTL. It is code the user did not ask for, it signs with keys outside the wallet, and it
+is not what the published site does. Tell the user plainly that the buttons need a wallet and are
+tried on testnet.
+
 ---
 
 ## Step 1 — Generate the contract client
@@ -106,6 +113,12 @@ In `main.ts`:
   from the connected account with `account.address`, numbers with `U256.fromBigInt(1n)`. An
   address reads `entity-account-<hex>` or `hash-<hex>`; link it with `addressUrl()` from
   `network.ts`, and compare it with `currentAccount()?.address.value` to mark "you".
+- **A client call frees every `Address`, `U256` and `U512` passed to it.** The `.d.ts` does not
+  say so (`balanceOf(address: Address)`), but the object is moved into the call. Use it again
+  (`balanceOf(me)` and then `me.value`, or the same `Address` in a second call) and the page stops
+  with `null pointer passed to rust`. Keep addresses as strings and amounts as `bigint`, and build
+  a fresh object for each call: `const addr = (s: string) => new Address(s)`, then
+  `contract.balanceOf(addr(me))`. Values *returned* by a getter are yours to keep.
 - **A getter that reverts rejects its promise.** Where "not there" is an expected answer, wrap
   the read: `await readOr([], () => contract.tokenMetadata(id))`. Of the `Cep95` getters,
   `tokenMetadata` and `approvedFor` revert for a token that does not exist (`User(40005)`);
@@ -166,23 +179,38 @@ its PID (`npm run dev > /tmp/web-dev.log 2>&1 & echo $!`), and stop it with `kil
 checking with `curl`, look at content, not the status code: fetch `contracts.casper-test.json` and
 see your contract's name — another project's server answers 200 as well.
 
+Then **open the page in a headless browser before you say it works**. A build that passes and
+reads that answer do not mean the page starts: a runtime error in `main.ts` leaves a blank or
+half-drawn page, and only a browser shows it. With the dev server running:
+
+```bash
+cd web && npm install --no-save playwright@1.49.1 && npx playwright install chromium   # once
+node ${CLAUDE_SKILL_DIR}/scripts/check-page.mjs http://localhost:5173 --expect "<text the page shows once state has loaded>"
+```
+
+It fails on an uncaught error, an error in the console, a failed request or a missing expected
+text, and saves a screenshot (`/tmp/check-page.png`; look at it). Use one `--expect` per piece of
+state the page shows without a wallet: a heading, a balance label, a form title. Fix every
+problem it reports and run it again. If Chromium cannot run here (`npx playwright install
+--with-deps chromium` needs root for its system libraries), say that the page is **unchecked in a
+browser** and ask the user to open it and tell you what they see. Do not call it working.
+
 Then check in a browser, in this order, and report each honestly:
 
-1. The page loads and shows contract state **without a wallet** — this proves the addresses, the
-   reader key and the reads.
+1. The page loads and shows contract state **without a wallet** (`check-page.mjs` above) — this
+   proves the addresses, the reader key and the reads.
 2. **Connect wallet** opens the CSPR.click sign-in dialog (Casper Wallet, Ledger, MetaMask). The user needs the Casper Wallet extension, switched to
    **Testnet**, with an account that holds test CSPR (`/odra-plugin:setup-account`).
 3. One transaction per action, approved in the wallet; the status line links to the explorer and
    the state on the page changes.
 
-Steps 2 and 3 need the user's wallet: you cannot approve a transaction for them. If you cannot
-drive a browser at all, say that the page builds and `check-reads.mjs` passes, and that rendering
-and the wallet flow are unchecked.
+Steps 2 and 3 need the user's wallet: you cannot approve a transaction for them.
 
 When a read fails, open the browser console; the usual causes:
 
 | Message | Cause |
 | --- | --- |
+| `null pointer passed to rust` | an `Address`/`U256`/`U512` was used again after a client call freed it: build a fresh one per call (Step 3) |
 | `WASM_CLIENT_SK was empty at build time` | client built without `build-client.sh` |
 | `no such addressable entity` | the reader account has never been funded on this network |
 | `RuntimeError: unreachable`, and the page waits forever | the client was built with odra-wasm-client 2.10: bump the project to Odra 2.11, delete `<project>_client/Cargo.lock`, run `build-client.sh` |
